@@ -127,7 +127,7 @@ autoPushEl.addEventListener("change", () => {
 });
 
 baseUrlEl.addEventListener("change", () => {
-  send({ type: "SET_SETTINGS", patch: { baseUrl: baseUrlEl.value.trim() || "http://localhost:3000" } });
+  send({ type: "SET_SETTINGS", patch: { baseUrl: baseUrlEl.value.trim() || "https://noetis.vercel.app" } });
 });
 
 accessKeyEl.addEventListener("change", () => {
