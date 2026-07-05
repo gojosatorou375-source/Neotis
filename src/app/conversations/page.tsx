@@ -36,6 +36,11 @@ export default function ConversationsPage() {
     });
   };
 
+  const allSelected = selectedIds.size > 0 && selectedIds.size === conversations.length;
+  const toggleSelectAll = () => {
+    setSelectedIds(allSelected ? new Set() : new Set(conversations.map((c) => c.id)));
+  };
+
   const handleBulkDelete = () => {
     if (selectedIds.size === 0) return;
     // Conversations are the source of truth for every other feature —
@@ -104,6 +109,9 @@ export default function ConversationsPage() {
               {selectMode ? (
                 <div className="flex items-center gap-2">
                   <span className="text-small text-[var(--text-secondary)]">{selectedIds.size} selected</span>
+                  <Button size="sm" variant="glass" onClick={toggleSelectAll}>
+                    {allSelected ? "Deselect all" : "Select all"}
+                  </Button>
                   <Button
                     size="sm"
                     variant="ghost"
