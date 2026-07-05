@@ -5,7 +5,7 @@
 
 const STORAGE_KEY = "personamd_captures";
 const SETTINGS_KEY = "personamd_settings";
-const DEFAULT_SETTINGS = { autoPush: true, baseUrl: "http://localhost:3000", accessKey: "" };
+const DEFAULT_SETTINGS = { autoPush: true, baseUrl: "https://noetis.vercel.app", accessKey: "" };
 const MATCH_PATTERNS = ["https://chatgpt.com/*", "https://chat.openai.com/*", "https://claude.ai/*"];
 // Caps how many conversations "Capture all recent" will walk through in one
 // go — a safety valve against hammering the provider and against a batch

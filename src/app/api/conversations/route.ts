@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readConversations, upsertConversation, updateConversation } from "@/lib/server/conversation-store";
+import {
+  readConversations,
+  upsertConversation,
+  updateConversation,
+  deleteAllConversations,
+} from "@/lib/server/conversation-store";
 import { extractInsights } from "@/lib/llm/openrouter";
 import { checkAccessKey } from "@/lib/server/access-key";
 import type { Conversation } from "@/types/conversation";
@@ -8,7 +13,7 @@ import type { Conversation } from "@/types/conversation";
 // straight into this dev server, and lets the app poll for new ones.
 function withCors(response: NextResponse): NextResponse {
   response.headers.set("Access-Control-Allow-Origin", "*");
-  response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  response.headers.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   response.headers.set("Access-Control-Allow-Headers", "Content-Type, X-PersonaMD-Access");
   return response;
 }
@@ -79,4 +84,16 @@ export async function POST(req: NextRequest) {
   }
 
   return withCors(NextResponse.json({ conversation: stored, isNew }));
+}
+
+/** Wipes every captured conversation. Used by the Dashboard's "Reset all
+ * data" action — since conversations are the source of truth for the whole
+ * app, this is the one call that needs to actually reach every row, not
+ * just the ones currently loaded on some client. */
+export async function DELETE(req: NextRequest) {
+  const denied = checkAccessKey(req);
+  if (denied) return withCors(denied);
+
+  await deleteAllConversations();
+  return withCors(NextResponse.json({ ok: true }));
 }

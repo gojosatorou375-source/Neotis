@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Conversation, Platform, ProductivityStats } from "@/types/recovery";
 import type { Conversation as CapturedConversation } from "@/types/conversation";
 import { buildConversation } from "@/lib/recovery/metadata-pipeline";
@@ -13,6 +13,7 @@ import {
   type RankedConversation,
 } from "@/lib/recovery/derive";
 import {
+  deleteAllRecoveryConversations,
   deleteRecoveryConversation,
   emptyStats,
   fetchRecoveryConversations,
@@ -159,6 +160,15 @@ export function useRecoveryStore() {
     });
   }, []);
 
+  /**
+   * Every feature in this app (Timeline, Knowledge Graph, Capsules, the
+   * productivity stats) is derived from `conversations` — there is no
+   * independent source of truth for any of them. Deleting a conversation
+   * here must therefore "downgrade" every dependent view in the same tick:
+   * remove it from state (so derived views recompute immediately), delete
+   * its row server-side, and pull its contribution back out of the stats
+   * counters so they never overstate what's actually left.
+   */
   const deleteConversation = useCallback(
     (id: string) => {
       setConversations((prev) => {
@@ -166,38 +176,108 @@ export function useRecoveryStore() {
         if (selectedId === id) setSelectedId(next[0]?.id ?? null);
         return next;
       });
+      persistStats({
+        ...stats,
+        recoveredConversations: Math.max(0, stats.recoveredConversations - 1),
+      });
       deleteRecoveryConversation(id).catch((err) => console.error("Failed to delete conversation:", err));
     },
-    [selectedId]
+    [selectedId, persistStats, stats]
   );
 
   /**
-   * Syncs conversations captured by the browser extension (via
-   * /api/conversations) into this dashboard. Each one is run through the
-   * same local metadata pipeline as a manual paste-import, and reuses the
-   * captured conversation's own id so repeated calls (e.g. from a polling
-   * hook) only import conversations not already present here.
+   * Bulk variant of deleteConversation — removes every id from state and
+   * stats in one pass instead of one setState per card, so a large "select
+   * all, delete" doesn't thrash renders or double-decrement stats.
    */
-  const importCapturedConversations = useCallback(
-    (captured: CapturedConversation[]) => {
-      const existingIds = new Set(conversations.map((c) => c.id));
-      const toImport = captured.filter((c) => !existingIds.has(c.id));
-      if (toImport.length === 0) return;
-
-      const built = toImport.map((c) => buildConversationFromCaptured(c, projects));
-      setConversations((prev) => [...prev, ...built]);
-      for (const conversation of built) {
-        insertRecoveryConversation(conversation).catch((err) =>
-          console.error("Failed to save captured conversation:", err)
-        );
-      }
-      if (!selectedId) setSelectedId(built[0].id);
+  const deleteConversations = useCallback(
+    (ids: string[]) => {
+      if (ids.length === 0) return;
+      const idSet = new Set(ids);
+      setConversations((prev) => {
+        const next = prev.filter((c) => !idSet.has(c.id));
+        if (selectedId && idSet.has(selectedId)) setSelectedId(next[0]?.id ?? null);
+        return next;
+      });
       persistStats({
         ...stats,
-        recoveredConversations: stats.recoveredConversations + built.length,
+        recoveredConversations: Math.max(0, stats.recoveredConversations - ids.length),
       });
+      for (const id of ids) {
+        deleteRecoveryConversation(id).catch((err) => console.error("Failed to delete conversation:", err));
+      }
     },
-    [conversations, projects, persistStats, stats, selectedId]
+    [selectedId, persistStats, stats]
+  );
+
+  // Tracks which recovery conversations currently mirror a captured
+  // (extension) conversation, so that a captured conversation being deleted
+  // can be detected and its mirror removed here too — otherwise Timeline,
+  // Knowledge Graph, and Capsules would keep showing a conversation whose
+  // "source of truth" record is already gone.
+  const capturedIdsRef = useRef<Set<string>>(new Set());
+
+  /**
+   * Syncs conversations captured by the browser extension (via
+   * /api/conversations) into this dashboard, in both directions:
+   *  - new captured conversations are run through the same local metadata
+   *    pipeline as a manual paste-import and added here (reusing the
+   *    captured conversation's own id, so this is naturally idempotent);
+   *  - captured conversations that have since been deleted (bulk-deleted on
+   *    the Conversations page, for example) have their mirror here removed,
+   *    so every dependent feature downgrades to match — if the last
+   *    conversation disappears, Timeline/Graph/Capsules fall back to their
+   *    empty states rather than showing stale data.
+   */
+  const syncCapturedConversations = useCallback(
+    (captured: CapturedConversation[]) => {
+      const capturedIds = new Set(captured.map((c) => c.id));
+      const previouslyTracked = capturedIdsRef.current;
+      const staleIds = [...previouslyTracked].filter((id) => !capturedIds.has(id));
+
+      setConversations((prev) => {
+        let next = prev;
+
+        if (staleIds.length > 0) {
+          const staleSet = new Set(staleIds);
+          next = next.filter((c) => !staleSet.has(c.id));
+          for (const id of staleIds) {
+            deleteRecoveryConversation(id).catch((err) =>
+              console.error("Failed to remove stale captured conversation:", err)
+            );
+          }
+          if (selectedId && staleSet.has(selectedId)) setSelectedId(next[0]?.id ?? null);
+        }
+
+        const existingIds = new Set(next.map((c) => c.id));
+        const toImport = captured.filter((c) => !existingIds.has(c.id));
+        if (toImport.length > 0) {
+          const built = toImport.map((c) => buildConversationFromCaptured(c, projects));
+          next = [...next, ...built];
+          for (const conversation of built) {
+            insertRecoveryConversation(conversation).catch((err) =>
+              console.error("Failed to save captured conversation:", err)
+            );
+          }
+          if (!selectedId) setSelectedId(built[0].id);
+        }
+
+        if (staleIds.length > 0 || toImport.length > 0) {
+          persistStats({
+            ...stats,
+            recoveredConversations: Math.max(
+              0,
+              stats.recoveredConversations - staleIds.length + toImport.length
+            ),
+          });
+        }
+
+        return next;
+      });
+
+      capturedIdsRef.current = capturedIds;
+    },
+    [projects, persistStats, stats, selectedId]
   );
 
   const updateStatus = useCallback((id: string, status: Conversation["status"]) => {
@@ -208,6 +288,21 @@ export function useRecoveryStore() {
       return next;
     });
   }, []);
+
+  /**
+   * True full wipe of this store — unlike deleteConversations(ids), this
+   * reaches every row in Supabase regardless of what's currently loaded
+   * (seed data, conversations from an old import path, anything), because
+   * "Reset all data" needs to guarantee an actual zero, not just clear
+   * whatever the client happened to fetch on load.
+   */
+  const resetAll = useCallback(async () => {
+    setConversations([]);
+    setSelectedId(null);
+    capturedIdsRef.current = new Set();
+    persistStats(emptyStats());
+    await deleteAllRecoveryConversations();
+  }, [persistStats]);
 
   return {
     hydrated,
@@ -227,7 +322,9 @@ export function useRecoveryStore() {
     moveConversation,
     archiveConversation,
     deleteConversation,
+    deleteConversations,
     updateStatus,
-    importCapturedConversations,
+    syncCapturedConversations,
+    resetAll,
   };
 }

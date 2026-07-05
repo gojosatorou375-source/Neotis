@@ -99,11 +99,46 @@ export function useConversations() {
     [fetchConversations]
   );
 
+  /** Bulk delete for the "select multiple, delete" flow — conversations are
+   * the source of truth for the whole app, so every id removed here is also
+   * removed from the recovery mirror by the syncCapturedConversations effect
+   * that watches this hook's `conversations` output. */
+  const deleteConversations = useCallback(
+    async (ids: string[]) => {
+      if (ids.length === 0) return;
+      const idSet = new Set(ids);
+      setConversations((prev) => prev.filter((c) => !idSet.has(c.id)));
+      try {
+        await Promise.all(
+          ids.map((id) => fetch(`/api/conversations/${id}`, { method: "DELETE", headers: accessHeaders() }))
+        );
+      } finally {
+        fetchConversations();
+      }
+    },
+    [fetchConversations]
+  );
+
+  /** Wipes every captured conversation on the server in one call — unlike
+   * deleteConversations(ids), this reaches rows the client never loaded
+   * (e.g. seed data from another import path), which is what "Reset all
+   * data" needs to guarantee a true zero. */
+  const resetAll = useCallback(async () => {
+    setConversations([]);
+    try {
+      await fetch("/api/conversations", { method: "DELETE", headers: accessHeaders() });
+    } finally {
+      fetchConversations();
+    }
+  }, [fetchConversations]);
+
   return {
     hydrated,
     conversations,
     importCapsule,
     deleteConversation,
+    deleteConversations,
+    resetAll,
     generateInsights,
     refresh: fetchConversations,
   };

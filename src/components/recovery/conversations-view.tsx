@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageSquare, Sparkles, UploadCloud } from "lucide-react";
+import { MessageSquare, Sparkles, Trash2, UploadCloud, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConversationCard } from "@/components/conversations/conversation-card";
 import { ConversationViewDialog } from "@/components/conversations/conversation-view-dialog";
@@ -13,6 +13,9 @@ interface ConversationsViewProps {
   conversations: Conversation[];
   onImport: (capsule: ConversationCapsule) => Promise<{ added: number; skipped: number }>;
   onDelete: (id: string) => void;
+  /** Bulk delete — every dependent feature (Timeline, Knowledge Graph,
+   * Capsules) downgrades to match once these ids disappear from here. */
+  onDeleteMany?: (ids: string[]) => void;
   onGenerateInsights: (id: string) => Promise<{ ok: boolean; error?: string }>;
   /** Present only when this conversation has also synced into the recovery
    * store — builds a Capsule from it and opens the copy/download dialog. */
@@ -29,11 +32,40 @@ export function ConversationsView({
   conversations,
   onImport,
   onDelete,
+  onDeleteMany,
   onGenerateInsights,
   onContinue,
 }: ConversationsViewProps) {
   const [viewing, setViewing] = useState<Conversation | null>(null);
   const [importing, setImporting] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = () => {
+    if (!onDeleteMany || selectedIds.size === 0) return;
+    if (
+      window.confirm(
+        `Delete ${selectedIds.size} conversation${selectedIds.size > 1 ? "s" : ""}? This can't be undone.`
+      )
+    ) {
+      onDeleteMany([...selectedIds]);
+      exitSelectMode();
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto p-6 sm:p-10">
@@ -63,24 +95,60 @@ export function ConversationsView({
             </p>
           </div>
         ) : (
-          <motion.div layout className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <AnimatePresence>
-              {conversations.map((conversation) => (
-                <ConversationCard
-                  key={conversation.id}
-                  conversation={conversation}
-                  onView={() => setViewing(conversation)}
-                  onGenerateInsights={onGenerateInsights}
-                  onContinue={onContinue}
-                  onDelete={() => {
-                    if (window.confirm(`Delete "${conversation.title}"? This can't be undone.`)) {
-                      onDelete(conversation.id);
-                    }
-                  }}
-                />
-              ))}
-            </AnimatePresence>
-          </motion.div>
+          <>
+            {onDeleteMany && (
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-small text-[var(--text-secondary)]">
+                  {conversations.length} conversation{conversations.length === 1 ? "" : "s"}
+                </p>
+                {selectMode ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-small text-[var(--text-secondary)]">{selectedIds.size} selected</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-500 hover:bg-red-500/10"
+                      onClick={handleBulkDelete}
+                      disabled={selectedIds.size === 0}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete selected
+                    </Button>
+                    <Button size="sm" variant="glass" onClick={exitSelectMode}>
+                      <X className="h-3.5 w-3.5" />
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <Button size="sm" variant="glass" onClick={() => setSelectMode(true)}>
+                    Select
+                  </Button>
+                )}
+              </div>
+            )}
+
+            <motion.div layout className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <AnimatePresence>
+                {conversations.map((conversation) => (
+                  <ConversationCard
+                    key={conversation.id}
+                    conversation={conversation}
+                    onView={() => setViewing(conversation)}
+                    onGenerateInsights={onGenerateInsights}
+                    onContinue={onContinue}
+                    selectable={selectMode}
+                    selected={selectedIds.has(conversation.id)}
+                    onToggleSelect={() => toggleSelected(conversation.id)}
+                    onDelete={() => {
+                      if (window.confirm(`Delete "${conversation.title}"? This can't be undone.`)) {
+                        onDelete(conversation.id);
+                      }
+                    }}
+                  />
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          </>
         )}
       </div>
 

@@ -3,147 +3,368 @@
   <head>
     <meta charset="utf-8" />
     <style>
-      body {
-        width: 320px;
-        margin: 0;
-        padding: 16px;
-        font-family: -apple-system, "SF Pro Text", Inter, system-ui, sans-serif;
-        color: #1d1d1f;
-        background: #fafafa;
+      :root {
+        color-scheme: light dark;
+        --accent: #0a84ff;
+        --accent-soft: rgba(10, 132, 255, 0.12);
+        --danger: #ff3b30;
+        --bg: #f2f2f7;
+        --panel: #ffffff;
+        --ink: #1c1c1e;
+        --sub: #8a8a8e;
+        --separator: rgba(60, 60, 67, 0.16);
+        --header: rgba(0, 0, 0, 0.4);
       }
-      h1 {
-        font-size: 14px;
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --accent: #0a84ff;
+          --accent-soft: rgba(10, 132, 255, 0.18);
+          --bg: #000000;
+          --panel: #1c1c1e;
+          --ink: #f5f5f7;
+          --sub: #8e8e93;
+          --separator: rgba(84, 84, 88, 0.5);
+          --header: rgba(255, 255, 255, 0.5);
+        }
+      }
+      * {
+        box-sizing: border-box;
+        -webkit-font-smoothing: antialiased;
+      }
+      body {
+        width: 340px;
+        margin: 0;
+        padding: 0 0 14px;
+        font-family: -apple-system, "SF Pro Text", "SF Pro Display", Inter, system-ui, sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+      }
+
+      /* ---------- Header ---------- */
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 16px 16px 4px;
+      }
+      .topbar h1 {
+        font-size: 16px;
         font-weight: 600;
-        margin: 0 0 4px;
+        letter-spacing: -0.01em;
+        margin: 0;
+      }
+      .topbar .mark {
+        flex-shrink: 0;
       }
       p.hint {
-        font-size: 11.5px;
-        color: #6e6e73;
-        margin: 0 0 12px;
-        line-height: 1.4;
+        font-size: 12px;
+        color: var(--sub);
+        margin: 4px 16px 16px;
+        line-height: 1.45;
+      }
+
+      /* ---------- Grouped section label (iOS Settings style) ---------- */
+      .section-label {
+        font-size: 11px;
+        font-weight: 590;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--sub);
+        margin: 20px 16px 6px;
+      }
+
+      /* ---------- Grouped inset panel ---------- */
+      .group {
+        margin: 0 12px;
+        border-radius: 12px;
+        background: var(--panel);
+        overflow: hidden;
+        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 12px;
+        border-bottom: 0.5px solid var(--separator);
+        min-height: 20px;
+      }
+      .row:last-child {
+        border-bottom: none;
+      }
+      .row-label {
+        flex: 1;
+        font-size: 13.5px;
+        font-weight: 400;
+      }
+
+      /* ---------- iOS-style toggle switch ---------- */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 38px;
+        height: 22px;
+        flex-shrink: 0;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .switch .track {
+        position: absolute;
+        inset: 0;
+        background: rgba(120, 120, 128, 0.32);
+        border-radius: 22px;
+        transition: background 0.18s ease;
+      }
+      .switch .track::before {
+        content: "";
+        position: absolute;
+        height: 18px;
+        width: 18px;
+        left: 2px;
+        top: 2px;
+        border-radius: 50%;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+        transition: transform 0.18s ease;
+      }
+      .switch input:checked + .track {
+        background: #34c759;
+      }
+      .switch input:checked + .track::before {
+        transform: translateX(16px);
+      }
+
+      /* ---------- Text fields (iOS Settings row inputs) ---------- */
+      .field-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+      }
+      .field-row .field-label {
+        font-size: 11px;
+        font-weight: 590;
+        color: var(--sub);
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
+      .field-row input[type="text"] {
+        border: none;
+        background: transparent;
+        font-size: 13.5px;
+        font-family: inherit;
+        color: var(--ink);
+        padding: 0;
+        outline: none;
+      }
+      .field-row input[type="text"]::placeholder {
+        color: var(--sub);
+      }
+
+      /* ---------- Buttons ---------- */
+      .actions {
+        margin: 16px 12px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
       }
       button {
         width: 100%;
         border: none;
-        border-radius: 12px;
-        padding: 10px 14px;
-        font-size: 13px;
-        font-weight: 500;
+        border-radius: 11px;
+        padding: 11px 14px;
+        font-size: 13.5px;
+        font-weight: 590;
         cursor: pointer;
-        margin-bottom: 8px;
+        font-family: inherit;
+        transition: opacity 0.12s ease, background 0.12s ease;
+      }
+      button:active {
+        opacity: 0.7;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: default;
       }
       .primary {
-        background: #007aff;
+        background: var(--accent);
         color: white;
       }
       .secondary {
-        background: rgba(0, 0, 0, 0.06);
-        color: #1d1d1f;
+        background: var(--accent-soft);
+        color: var(--accent);
       }
-      .status {
-        font-size: 11.5px;
-        color: #6e6e73;
-        margin: 4px 0 12px;
-        min-height: 14px;
-      }
-      ul {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        max-height: 220px;
-        overflow-y: auto;
-      }
-      li {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 0;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-        font-size: 12px;
-      }
-      li .meta {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      li button.delete {
-        width: auto;
-        margin: 0;
-        padding: 4px 8px;
+      .plain {
         background: transparent;
-        color: #ff3b30;
-        font-size: 11px;
+        color: var(--sub);
+        padding: 8px 14px;
       }
-      .empty {
+      .plain.danger {
+        color: var(--danger);
+      }
+      .footer-actions {
+        display: flex;
+        gap: 6px;
+        margin: 4px 12px 0;
+      }
+      .footer-actions button {
+        flex: 1;
+      }
+
+      /* ---------- Status + progress ---------- */
+      .status {
         font-size: 12px;
-        color: #6e6e73;
-        text-align: center;
-        padding: 16px 0;
+        color: var(--sub);
+        margin: 10px 16px 0;
+        min-height: 14px;
+        line-height: 1.4;
       }
       .progress-track {
-        height: 6px;
-        border-radius: 3px;
-        background: rgba(0, 0, 0, 0.08);
+        height: 4px;
+        border-radius: 2px;
+        background: var(--separator);
         overflow: hidden;
-        margin: 6px 0 10px;
+        margin: 10px 16px 0;
         display: none;
       }
       .progress-fill {
         height: 100%;
-        background: #007aff;
+        background: var(--accent);
         width: 0%;
         transition: width 0.2s ease;
       }
-      .settings {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        padding: 10px;
-        border-radius: 12px;
-        background: rgba(0, 0, 0, 0.04);
-        margin-bottom: 12px;
+
+      /* ---------- Captured list ---------- */
+      ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 216px;
+        overflow-y: auto;
       }
-      .settings label {
+      ul::-webkit-scrollbar {
+        width: 5px;
+      }
+      ul::-webkit-scrollbar-thumb {
+        background: rgba(120, 120, 128, 0.35);
+        border-radius: 3px;
+      }
+      li.capture-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-bottom: 0.5px solid var(--separator);
+        font-size: 12.5px;
+      }
+      li.capture-row:last-child {
+        border-bottom: none;
+      }
+      li.capture-row .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      li.capture-row .meta {
         display: flex;
         align-items: center;
-        gap: 6px;
-        font-size: 12px;
+        gap: 7px;
+        overflow: hidden;
+        min-width: 0;
       }
-      .settings input[type="text"] {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 6px 8px;
-        border-radius: 8px;
-        border: 1px solid rgba(0, 0, 0, 0.12);
-        font-size: 12px;
+      li.capture-row .meta span.label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      li.capture-row button.delete {
+        width: auto;
+        flex-shrink: 0;
+        padding: 4px 8px;
+        background: transparent;
+        color: var(--danger);
+        font-size: 11.5px;
+        font-weight: 500;
+        opacity: 0.85;
+      }
+      .empty {
+        font-size: 12.5px;
+        color: var(--sub);
+        text-align: center;
+        padding: 22px 12px;
       }
     </style>
   </head>
   <body>
-    <h1>Noetis Capture</h1>
+    <div class="topbar">
+      <svg class="mark" width="22" height="22" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="noetisPopupMark" x1="6" y1="10" x2="58" y2="46" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#1c6b74" />
+            <stop offset="55%" stop-color="#3f8f8a" />
+            <stop offset="100%" stop-color="#d8a548" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M8 20C8 14 17 10 32 16C47 10 56 14 56 20V44C56 44 47 38 32 44C17 38 8 44 8 44V20Z"
+          stroke="url(#noetisPopupMark)"
+          stroke-width="4"
+          stroke-linejoin="round"
+          stroke-linecap="round"
+        />
+        <path d="M32 16V44" stroke="url(#noetisPopupMark)" stroke-width="3.5" stroke-linecap="round" />
+        <path d="M32 16V8" stroke="url(#noetisPopupMark)" stroke-width="3.5" stroke-linecap="round" />
+        <path d="M32 8L21 13" stroke="url(#noetisPopupMark)" stroke-width="2.5" stroke-linecap="round" />
+        <path d="M32 8L43 13" stroke="url(#noetisPopupMark)" stroke-width="2.5" stroke-linecap="round" />
+        <circle cx="32" cy="8" r="4.5" fill="url(#noetisPopupMark)" />
+        <circle cx="21" cy="13" r="3" fill="url(#noetisPopupMark)" />
+        <circle cx="43" cy="13" r="3" fill="url(#noetisPopupMark)" />
+      </svg>
+      <h1>Noetis Capture</h1>
+    </div>
     <p class="hint">
       Open a ChatGPT or Claude conversation, then capture it here. With
-      auto-push on, each capture is sent straight to your local Noetis app
-      — no file needed.
+      auto-push on, each capture is sent straight to your Noetis app.
     </p>
 
-    <div class="settings">
-      <label>
-        <input type="checkbox" id="autoPush" />
-        Auto-push to Noetis dev server
+    <div class="group">
+      <label class="row" for="autoPush">
+        <span class="row-label">Auto-push to Noetis</span>
+        <span class="switch">
+          <input type="checkbox" id="autoPush" />
+          <span class="track"></span>
+        </span>
       </label>
-      <input type="text" id="baseUrl" placeholder="http://localhost:3000" />
-      <input type="text" id="accessKey" placeholder="Access key (matches NEXT_PUBLIC_APP_ACCESS_KEY)" />
+      <div class="row field-row">
+        <span class="field-label">Base URL</span>
+        <input type="text" id="baseUrl" placeholder="https://noetis.vercel.app" />
+      </div>
+      <div class="row field-row">
+        <span class="field-label">Access key</span>
+        <input type="text" id="accessKey" placeholder="Matches NEXT_PUBLIC_APP_ACCESS_KEY" />
+      </div>
     </div>
 
-    <button id="capture" class="primary">Capture this tab</button>
-    <button id="captureAll" class="secondary">Capture all recent (this tab's sidebar)</button>
+    <div class="actions">
+      <button id="capture" class="primary">Capture this tab</button>
+      <button id="captureAll" class="secondary">Capture all recent</button>
+    </div>
     <div id="progressTrack" class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
     <div id="status" class="status"></div>
-    <ul id="list"></ul>
-    <button id="download" class="secondary">Download Capsule (JSON)</button>
-    <button id="clear" class="secondary">Clear all</button>
+
+    <div class="section-label">Captured</div>
+    <div class="group">
+      <ul id="list"></ul>
+    </div>
+
+    <div class="footer-actions">
+      <button id="download" class="plain">Download JSON</button>
+      <button id="clear" class="plain danger">Clear all</button>
+    </div>
     <script src="popup.js"></script>
   </body>
 </html>

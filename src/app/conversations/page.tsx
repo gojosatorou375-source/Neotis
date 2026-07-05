@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { Home, MessageSquare, Sparkles, UploadCloud } from "lucide-react";
+import { Home, MessageSquare, Sparkles, Trash2, UploadCloud, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { ConversationCard } from "@/components/conversations/conversation-card";
@@ -13,11 +13,43 @@ import { useConversations } from "@/lib/conversations/use-conversations";
 import type { Conversation } from "@/types/conversation";
 
 export default function ConversationsPage() {
-  const { hydrated, conversations, importCapsule, deleteConversation, generateInsights } = useConversations();
+  const { hydrated, conversations, importCapsule, deleteConversation, deleteConversations, generateInsights } =
+    useConversations();
   const [viewing, setViewing] = useState<Conversation | null>(null);
   const [importing, setImporting] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   if (!hydrated) return null;
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    // Conversations are the source of truth for every other feature —
+    // deleting them here cascades into Timeline, Knowledge Graph, and
+    // Capsules automatically via the recovery store's sync effect.
+    if (
+      window.confirm(
+        `Delete ${selectedIds.size} conversation${selectedIds.size > 1 ? "s" : ""}? This can't be undone.`
+      )
+    ) {
+      deleteConversations([...selectedIds]);
+      exitSelectMode();
+    }
+  };
 
   return (
     <div className="relative z-10 min-h-screen">
@@ -64,23 +96,57 @@ export default function ConversationsPage() {
             </p>
           </div>
         ) : (
-          <motion.div layout className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <AnimatePresence>
-              {conversations.map((conversation) => (
-                <ConversationCard
-                  key={conversation.id}
-                  conversation={conversation}
-                  onView={() => setViewing(conversation)}
-                  onGenerateInsights={generateInsights}
-                  onDelete={() => {
-                    if (window.confirm(`Delete "${conversation.title}"? This can't be undone.`)) {
-                      deleteConversation(conversation.id);
-                    }
-                  }}
-                />
-              ))}
-            </AnimatePresence>
-          </motion.div>
+          <>
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-small text-[var(--text-secondary)]">
+                {conversations.length} conversation{conversations.length === 1 ? "" : "s"}
+              </p>
+              {selectMode ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-small text-[var(--text-secondary)]">{selectedIds.size} selected</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-500 hover:bg-red-500/10"
+                    onClick={handleBulkDelete}
+                    disabled={selectedIds.size === 0}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete selected
+                  </Button>
+                  <Button size="sm" variant="glass" onClick={exitSelectMode}>
+                    <X className="h-3.5 w-3.5" />
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="glass" onClick={() => setSelectMode(true)}>
+                  Select
+                </Button>
+              )}
+            </div>
+
+            <motion.div layout className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <AnimatePresence>
+                {conversations.map((conversation) => (
+                  <ConversationCard
+                    key={conversation.id}
+                    conversation={conversation}
+                    onView={() => setViewing(conversation)}
+                    onGenerateInsights={generateInsights}
+                    selectable={selectMode}
+                    selected={selectedIds.has(conversation.id)}
+                    onToggleSelect={() => toggleSelected(conversation.id)}
+                    onDelete={() => {
+                      if (window.confirm(`Delete "${conversation.title}"? This can't be undone.`)) {
+                        deleteConversation(conversation.id);
+                      }
+                    }}
+                  />
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          </>
         )}
       </div>
 

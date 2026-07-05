@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, ArrowRightCircle, Eye, MessageSquare, Sparkles, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowRightCircle, Check, Eye, MessageSquare, Sparkles, Trash2 } from "lucide-react";
 import { GlassPanel } from "@/components/glass-panel";
 import { Button } from "@/components/ui/button";
 import { providerColor, providerLabel } from "@/lib/conversations/provider-style";
@@ -14,6 +14,12 @@ interface ConversationCardProps {
   onDelete?: () => void;
   onGenerateInsights?: (id: string) => Promise<{ ok: boolean; error?: string }>;
   onContinue?: (id: string) => void;
+  /** When set, the card renders in bulk-select mode: clicking it toggles
+   * selection instead of opening the viewer, and a checkmark badge shows
+   * the current state. */
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 export function ConversationCard({
@@ -22,6 +28,9 @@ export function ConversationCard({
   onDelete,
   onGenerateInsights,
   onContinue,
+  selectable,
+  selected,
+  onToggleSelect,
 }: ConversationCardProps) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +54,24 @@ export function ConversationCard({
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.3 }}
     >
-      <GlassPanel className="flex h-full flex-col p-6" whileHover={{ y: -3 }}>
+      <GlassPanel
+        className={`relative flex h-full flex-col p-6 ${selectable ? "cursor-pointer" : ""} ${
+          selected ? "ring-2 ring-[var(--accent)]" : ""
+        }`}
+        whileHover={{ y: -3 }}
+        onClick={selectable ? onToggleSelect : undefined}
+      >
+        {selectable && (
+          <span
+            className={`absolute right-4 top-4 flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${
+              selected
+                ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                : "border-[var(--border)] bg-white/40 dark:bg-white/5"
+            }`}
+          >
+            {selected && <Check className="h-3 w-3" strokeWidth={3} />}
+          </span>
+        )}
         <div className="mb-2 flex items-center gap-2">
           <div
             className="flex h-9 w-9 items-center justify-center rounded-full"
@@ -53,7 +79,7 @@ export function ConversationCard({
           >
             <MessageSquare className="h-4 w-4" style={{ color: providerColor(conversation.provider) }} strokeWidth={1.75} />
           </div>
-          <h3 className="truncate text-body font-semibold text-[var(--text-primary)]">
+          <h3 className="truncate text-body font-semibold text-[var(--text-primary)] pr-6">
             {conversation.title}
           </h3>
         </div>
@@ -89,34 +115,36 @@ export function ConversationCard({
 
         {error && <p className="mb-3 text-[11px] text-red-500">{error}</p>}
 
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="glass" onClick={onView}>
-            <Eye className="h-3.5 w-3.5" />
-            View
-          </Button>
-          {conversation.limitReached && onContinue && (
-            <Button size="sm" onClick={() => onContinue(conversation.id)}>
-              <ArrowRightCircle className="h-3.5 w-3.5" />
-              Continue in another LLM
+        {!selectable && (
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="glass" onClick={onView}>
+              <Eye className="h-3.5 w-3.5" />
+              View
             </Button>
-          )}
-          {!conversation.insights && onGenerateInsights && (
-            <Button size="sm" variant="ghost" onClick={handleGenerate} disabled={generating}>
-              <Sparkles className="h-3.5 w-3.5" />
-              {generating ? "Generating…" : "Generate insights"}
-            </Button>
-          )}
-          {onDelete && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onDelete}
-              className="text-red-500 hover:bg-red-500/10"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          )}
-        </div>
+            {conversation.limitReached && onContinue && (
+              <Button size="sm" onClick={() => onContinue(conversation.id)}>
+                <ArrowRightCircle className="h-3.5 w-3.5" />
+                Continue in another LLM
+              </Button>
+            )}
+            {!conversation.insights && onGenerateInsights && (
+              <Button size="sm" variant="ghost" onClick={handleGenerate} disabled={generating}>
+                <Sparkles className="h-3.5 w-3.5" />
+                {generating ? "Generating…" : "Generate insights"}
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onDelete}
+                className="text-red-500 hover:bg-red-500/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        )}
       </GlassPanel>
     </motion.div>
   );

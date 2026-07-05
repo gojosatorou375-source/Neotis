@@ -8,6 +8,7 @@
     "https://chatgpt.com/*",
     "https://chat.openai.com/*",
     "https://claude.ai/*",
+    "https://noetis.vercel.app/*",
     "http://localhost:3000/*",
     "http://127.0.0.1:3000/*"
   ],

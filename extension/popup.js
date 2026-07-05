@@ -8,6 +8,19 @@ const progressTrackEl = document.getElementById("progressTrack");
 const progressFillEl = document.getElementById("progressFill");
 let pollHandle = null;
 
+const PROVIDER_COLORS = {
+  chatgpt: "#10a37f",
+  claude: "#d97757",
+  gemini: "#4285f4",
+  grok: "#8b5cf6",
+  perplexity: "#20808d",
+  other: "#9a9a9e",
+};
+
+function providerColor(provider) {
+  return PROVIDER_COLORS[provider] || PROVIDER_COLORS.other;
+}
+
 function send(message) {
   return new Promise((resolve) => {
     // Safety net: if the background worker never calls sendResponse for some
@@ -40,9 +53,17 @@ function render(captures) {
 
   for (const c of captures) {
     const li = document.createElement("li");
+    li.className = "capture-row";
     const meta = document.createElement("span");
     meta.className = "meta";
-    meta.textContent = `[${c.provider}] ${c.title} · ${c.messages.length} msgs`;
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    dot.style.background = providerColor(c.provider);
+    const label = document.createElement("span");
+    label.className = "label";
+    label.textContent = `${c.title} · ${c.messages.length} msgs`;
+    meta.appendChild(dot);
+    meta.appendChild(label);
     const del = document.createElement("button");
     del.className = "delete";
     del.textContent = "Remove";

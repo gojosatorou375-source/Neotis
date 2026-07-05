@@ -75,3 +75,10 @@ export async function deleteCapsuleRow(id: string): Promise<void> {
   const { error } = await supabase.from("capsules").delete().eq("id", id);
   if (error) throw new Error(`Failed to delete capsule: ${error.message}`);
 }
+
+/** Wipes every capsule — used by the "Reset all data" action. */
+export async function deleteAllCapsules(): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("capsules").delete().not("id", "is", null);
+  if (error) throw new Error(`Failed to reset capsules: ${error.message}`);
+}

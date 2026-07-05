@@ -87,6 +87,14 @@ export async function deleteConversation(id: string): Promise<void> {
   if (error) throw new Error(`Failed to delete conversation: ${error.message}`);
 }
 
+/** Wipes every captured conversation — backs the "Reset all data" action.
+ * Deletes every row regardless of what the client currently has loaded. */
+export async function deleteAllConversations(): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("conversations").delete().not("id", "is", null);
+  if (error) throw new Error(`Failed to reset conversations: ${error.message}`);
+}
+
 /** Merges fields (e.g. LLM-derived insights) into an already-stored
  * conversation, found by id. No-ops if the id isn't present. */
 export async function updateConversation(

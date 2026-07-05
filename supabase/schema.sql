@@ -15,25 +15,53 @@
 -- requires a shared "access key" header that only this app's own client and
 -- browser extension send. Two steps before this works:
 --
---   1. Pick a long random string and put it in .env.local as
---      NEXT_PUBLIC_APP_ACCESS_KEY=<your-key> (see .env.local.example).
---   2. Run the ALTER DATABASE statement near the bottom of this file with
---      that same value substituted in, so Postgres knows what to check
---      requests against. Re-run it if you ever rotate the key.
+--   1. Pick a long random string and put it in .env.local (and your Vercel
+--      env vars) as NEXT_PUBLIC_APP_ACCESS_KEY=<your-key>.
+--   2. Run the UPDATE statement near the bottom of this file with that same
+--      value substituted in, so the database knows what to check requests
+--      against. Re-run it if you ever rotate the key.
+--
+-- NOTE: earlier versions of this file used `alter database ... set
+-- app.settings.personamd_access_key = ...` to store the key as a custom
+-- Postgres GUC. Supabase's hosted SQL Editor doesn't run with enough
+-- privilege to execute ALTER DATABASE ... SET (you'll see "permission
+-- denied to set parameter"), so the key is stored in a regular table
+-- instead (app_config below) — any normal SQL Editor session can UPDATE a
+-- table it owns, no special privileges required.
+
+-- ---------------------------------------------------------------------
+-- Holds the access key itself. RLS denies ALL direct access (even with the
+-- anon key) — the only way to read this table is through
+-- personamd_access_ok() below, which is declared SECURITY DEFINER so it
+-- runs with the privileges of the function's owner and can see this table
+-- regardless of the calling role's own policies.
+-- ---------------------------------------------------------------------
+create table if not exists app_config (
+  id smallint primary key default 1,
+  access_key text not null default '',
+  constraint singleton check (id = 1)
+);
+
+alter table app_config enable row level security;
+drop policy if exists "no direct access" on app_config;
+create policy "no direct access" on app_config for all using (false) with check (false);
+
+insert into app_config (id) values (1) on conflict (id) do nothing;
 
 -- ---------------------------------------------------------------------
 -- Shared access-key check, used by every table's policy below.
 -- ---------------------------------------------------------------------
 create or replace function personamd_access_ok() returns boolean
 language sql stable
+security definer
+set search_path = public
 as $$
   select
-    current_setting('app.settings.personamd_access_key', true) is not null
-    and current_setting('app.settings.personamd_access_key', true) <> ''
+    exists (select 1 from app_config where id = 1 and access_key <> '')
     and coalesce(
       (current_setting('request.headers', true)::json ->> 'x-personamd-access'),
       ''
-    ) = current_setting('app.settings.personamd_access_key', true);
+    ) = (select access_key from app_config where id = 1);
 $$;
 
 -- ---------------------------------------------------------------------
@@ -151,9 +179,14 @@ values (1)
 on conflict (id) do nothing;
 
 -- ---------------------------------------------------------------------
--- REQUIRED: tell Postgres what the access key actually is. Replace the
+-- REQUIRED: tell the database what the access key actually is. Replace the
 -- placeholder below with the exact value you put in NEXT_PUBLIC_APP_ACCESS_KEY
 -- and run this statement by itself (it's outside the "safe to re-run
--- blindly" table setup above, since it contains your secret value).
+-- blindly" table setup above, since it contains your secret value). This is
+-- a plain UPDATE — no elevated privileges needed, unlike the old ALTER
+-- DATABASE approach.
 -- ---------------------------------------------------------------------
--- alter database postgres set app.settings.personamd_access_key = 'REPLACE_WITH_YOUR_NEXT_PUBLIC_APP_ACCESS_KEY';
+-- update app_config set access_key = 'REPLACE_WITH_YOUR_NEXT_PUBLIC_APP_ACCESS_KEY' where id = 1;
+
+-- Verify it took effect:
+-- select access_key from app_config where id = 1;

@@ -4,7 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import type { Capsule } from "@/types/atlas";
 import type { Conversation } from "@/types/recovery";
 import { buildCapsule } from "@/lib/recovery/capsule-builder";
-import { deleteCapsuleRow, fetchCapsules, insertCapsule, updateCapsuleRow } from "@/lib/recovery/capsules-storage";
+import {
+  deleteAllCapsules,
+  deleteCapsuleRow,
+  fetchCapsules,
+  insertCapsule,
+  updateCapsuleRow,
+} from "@/lib/recovery/capsules-storage";
 
 export function useCapsules() {
   const [capsules, setCapsules] = useState<Capsule[]>([]);
@@ -43,11 +49,18 @@ export function useCapsules() {
     deleteCapsuleRow(id).catch((err) => console.error("Failed to delete capsule:", err));
   }, []);
 
+  /** Wipes every capsule — part of the "Reset all data" action. */
+  const resetAll = useCallback(async () => {
+    setCapsules([]);
+    await deleteAllCapsules();
+  }, []);
+
   return {
     hydrated,
     capsules,
     createCapsule,
     renameCapsule,
     deleteCapsule,
+    resetAll,
   };
 }

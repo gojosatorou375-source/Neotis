@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Home, Plus } from "lucide-react";
+import { Home, Plus, Trash2 } from "lucide-react";
 import { useConversations } from "@/lib/conversations/use-conversations";
 import { AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { useRecoveryStore } from "@/lib/recovery/use-recovery-store";
 import { useCapsules } from "@/lib/recovery/use-capsules";
 import { buildKnowledgeGraph } from "@/lib/recovery/knowledge-graph";
+import { emptyStats } from "@/lib/recovery/storage";
 import type { Capsule } from "@/types/atlas";
 
 export default function RecoveryPage() {
@@ -44,7 +45,8 @@ export default function RecoveryPage() {
     moveConversation,
     archiveConversation,
     deleteConversation,
-    importCapturedConversations,
+    syncCapturedConversations,
+    resetAll: resetRecoveryData,
   } = useRecoveryStore();
 
   const {
@@ -52,6 +54,7 @@ export default function RecoveryPage() {
     capsules,
     createCapsule,
     deleteCapsule,
+    resetAll: resetCapsuleData,
   } = useCapsules();
 
   // Conversations captured by the PersonaMD browser extension (a separate
@@ -61,10 +64,15 @@ export default function RecoveryPage() {
     conversations: captured,
     importCapsule: importCapturedCapsule,
     deleteConversation: deleteCaptured,
+    deleteConversations: deleteCapturedMany,
+    resetAll: resetCapturedData,
     generateInsights: generateCapturedInsights,
   } = useConversations();
   useEffect(() => {
-    if (captured.length > 0) importCapturedConversations(captured);
+    // Runs on every change to `captured` — including it shrinking to zero —
+    // so deletions (single or bulk) cascade into the recovery mirror and
+    // every dependent tab (Timeline, Graph, Capsules) downgrades in step.
+    syncCapturedConversations(captured);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [captured]);
 
@@ -73,6 +81,17 @@ export default function RecoveryPage() {
   const [continueCapsule, setContinueCapsule] = useState<Capsule | null>(null);
 
   const graph = useMemo(() => buildKnowledgeGraph(conversations), [conversations]);
+
+  // Hard rule: conversations are the single source of truth for this whole
+  // dashboard. Whatever `stats`/`capsules` happen to hold in state or in
+  // Supabase, the moment there are zero conversations every dependent
+  // surface must read as zero/empty too — this is a display-level gate on
+  // top of the cascade-delete logic in useRecoveryStore, so a stray stat or
+  // an orphaned capsule left over from some other code path can never make
+  // the dashboard look non-empty when the underlying data is gone.
+  const hasConversations = conversations.length > 0;
+  const effectiveStats = hasConversations ? stats : emptyStats();
+  const effectiveCapsules = hasConversations ? capsules : [];
 
   if (!hydrated || !capsulesHydrated) return null;
 
@@ -84,7 +103,7 @@ export default function RecoveryPage() {
   /**
    * "Continue in another LLM": a captured conversation flagged limitReached
    * has, by now, also synced into the recovery store under the same id (see
-   * importCapturedConversations above) — so it already has a summary,
+   * syncCapturedConversations above) — so it already has a summary,
    * decisions, code snippets, etc. from the local metadata pipeline. Build a
    * one-conversation Capsule from it and open the copy/download dialog.
    */
@@ -93,6 +112,24 @@ export default function RecoveryPage() {
     if (!enriched) return; // hasn't finished syncing into the recovery store yet — try again in a moment
     const capsule = createCapsule(`Continue: ${enriched.title}`, [conversationId], conversations);
     setContinueCapsule(capsule);
+  };
+
+  /**
+   * True full reset — wipes every row behind this dashboard (captured
+   * conversations, the recovery mirror, capsules, and stats), not just what
+   * the client currently has loaded. Needed because deleting conversations
+   * one-by-one only ever cascades the ones the client knows about; seed
+   * data or anything inserted through another path stays behind otherwise.
+   */
+  const handleResetAll = async () => {
+    if (
+      !window.confirm(
+        "Reset ALL data? This permanently deletes every captured conversation, recovery record, capsule, and stat. This can't be undone."
+      )
+    ) {
+      return;
+    }
+    await Promise.all([resetCapturedData(), resetRecoveryData(), resetCapsuleData()]);
   };
 
   return (
@@ -111,6 +148,15 @@ export default function RecoveryPage() {
         </div>
         <TabBar active={tab} onChange={setTab} />
         <div className="flex items-center gap-3">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-red-500 hover:bg-red-500/10"
+            onClick={handleResetAll}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Reset all data
+          </Button>
           <Button size="sm" onClick={() => setImportOpen(true)}>
             <Plus className="h-4 w-4" />
             Import conversation
@@ -125,7 +171,7 @@ export default function RecoveryPage() {
             <FindWhatIForgot conversations={conversations} onSelect={setSelectedId} />
           </div>
           <div className="border-b border-[var(--border)] px-6 py-5">
-            <ProductivityDashboard stats={stats} />
+            <ProductivityDashboard stats={effectiveStats} />
           </div>
         </>
       )}
@@ -167,6 +213,7 @@ export default function RecoveryPage() {
             conversations={captured}
             onImport={importCapturedCapsule}
             onDelete={deleteCaptured}
+            onDeleteMany={deleteCapturedMany}
             onGenerateInsights={generateCapturedInsights}
             onContinue={handleContinue}
           />
@@ -187,7 +234,7 @@ export default function RecoveryPage() {
         {tab === "capsules" && (
           <CapsulesView
             conversations={conversations}
-            capsules={capsules}
+            capsules={effectiveCapsules}
             onCreateCapsule={(name, ids) => createCapsule(name, ids, conversations)}
             onDeleteCapsule={deleteCapsule}
           />

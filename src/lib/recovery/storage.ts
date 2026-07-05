@@ -113,6 +113,16 @@ export async function deleteRecoveryConversation(id: string): Promise<void> {
   if (error) throw new Error(`Failed to delete conversation: ${error.message}`);
 }
 
+/** Wipes every row in the table — used by the "Reset all data" action, which
+ * needs a true full reset regardless of what's currently loaded into state
+ * (covers rows from seed data or any other import path, not just the ones
+ * the client happens to know about). */
+export async function deleteAllRecoveryConversations(): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("recovery_conversations").delete().not("id", "is", null);
+  if (error) throw new Error(`Failed to reset conversations: ${error.message}`);
+}
+
 interface StatsRow {
   recovered_conversations: number;
   duplicate_work_prevented: number;
