@@ -1,0 +1,32 @@
+# dependencies
+node_modules
+
+# next.js build output
+.next
+out
+build
+*.tsbuildinfo
+
+# env files (never commit real secrets — keep these local only)
+.env
+.env.local
+.env*.local
+
+# local data (pre-Supabase leftover store, if present)
+.data
+
+# logs
+*.log
+npm-debug.log*
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+
+# vercel
+.vercel
+
+# testing
+coverage

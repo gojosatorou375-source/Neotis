@@ -1,0 +1,110 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Conversation, ConversationCapsule } from "@/types/conversation";
+
+const POLL_INTERVAL_MS = 4000;
+
+// Sent alongside every request to /api/conversations so the shared secret
+// check in src/lib/server/access-key.ts lets same-origin app traffic
+// through (see NEXT_PUBLIC_APP_ACCESS_KEY in .env.local.example).
+function accessHeaders(extra?: Record<string, string>): Record<string, string> {
+  const key = process.env.NEXT_PUBLIC_APP_ACCESS_KEY;
+  return { ...(key ? { "X-PersonaMD-Access": key } : {}), ...extra };
+}
+
+/** Server-backed conversation library: reads from and writes through
+ * /api/conversations (a local JSON file on the dev server), and polls so
+ * conversations pushed directly by the browser extension show up here
+ * without a manual import step. */
+export function useConversations() {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fetchConversations = useCallback(async () => {
+    try {
+      const res = await fetch("/api/conversations", { cache: "no-store", headers: accessHeaders() });
+      if (!res.ok) return;
+      const data = await res.json();
+      setConversations(data.conversations ?? []);
+    } catch {
+      // Server not reachable (e.g. offline) — keep showing whatever we last had.
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchConversations().finally(() => setHydrated(true));
+    pollRef.current = setInterval(fetchConversations, POLL_INTERVAL_MS);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [fetchConversations]);
+
+  /** Pushes every conversation in a parsed Capsule to the server. The server
+   * dedupes by id, so re-importing the same capsule is a no-op. */
+  const importCapsule = useCallback(
+    async (capsule: ConversationCapsule): Promise<{ added: number; skipped: number }> => {
+      let added = 0;
+      let skipped = 0;
+      for (const conversation of capsule.conversations) {
+        try {
+          const res = await fetch("/api/conversations", {
+            method: "POST",
+            headers: accessHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(conversation),
+          });
+          const data = await res.json();
+          if (data.isNew) added += 1;
+          else skipped += 1;
+        } catch {
+          skipped += 1;
+        }
+      }
+      await fetchConversations();
+      return { added, skipped };
+    },
+    [fetchConversations]
+  );
+
+  /** Backfills insights for a conversation captured before an API key was
+   * configured (insights otherwise only run once, at ingest time). */
+  const generateInsights = useCallback(
+    async (id: string): Promise<{ ok: boolean; error?: string }> => {
+      try {
+        const res = await fetch(`/api/conversations/${id}/insights`, {
+          method: "POST",
+          headers: accessHeaders(),
+        });
+        const data = await res.json();
+        if (!res.ok) return { ok: false, error: data.error || "Extraction failed." };
+        await fetchConversations();
+        return { ok: true };
+      } catch {
+        return { ok: false, error: "Couldn't reach the server." };
+      }
+    },
+    [fetchConversations]
+  );
+
+  const deleteConversation = useCallback(
+    async (id: string) => {
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      try {
+        await fetch(`/api/conversations/${id}`, { method: "DELETE", headers: accessHeaders() });
+      } finally {
+        fetchConversations();
+      }
+    },
+    [fetchConversations]
+  );
+
+  return {
+    hydrated,
+    conversations,
+    importCapsule,
+    deleteConversation,
+    generateInsights,
+    refresh: fetchConversations,
+  };
+}

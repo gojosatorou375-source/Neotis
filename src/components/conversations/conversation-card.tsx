@@ -1,0 +1,123 @@
+"use client";
+
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { AlertTriangle, ArrowRightCircle, Eye, MessageSquare, Sparkles, Trash2 } from "lucide-react";
+import { GlassPanel } from "@/components/glass-panel";
+import { Button } from "@/components/ui/button";
+import { providerColor, providerLabel } from "@/lib/conversations/provider-style";
+import type { Conversation } from "@/types/conversation";
+
+interface ConversationCardProps {
+  conversation: Conversation;
+  onView: () => void;
+  onDelete?: () => void;
+  onGenerateInsights?: (id: string) => Promise<{ ok: boolean; error?: string }>;
+  onContinue?: (id: string) => void;
+}
+
+export function ConversationCard({
+  conversation,
+  onView,
+  onDelete,
+  onGenerateInsights,
+  onContinue,
+}: ConversationCardProps) {
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const preview =
+    conversation.insights?.summary || conversation.messages[0]?.content?.slice(0, 140) || "No content captured.";
+
+  const handleGenerate = async () => {
+    if (!onGenerateInsights) return;
+    setGenerating(true);
+    setError(null);
+    const result = await onGenerateInsights(conversation.id);
+    setGenerating(false);
+    if (!result.ok) setError(result.error ?? "Extraction failed.");
+  };
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.3 }}
+    >
+      <GlassPanel className="flex h-full flex-col p-6" whileHover={{ y: -3 }}>
+        <div className="mb-2 flex items-center gap-2">
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-full"
+            style={{ background: `${providerColor(conversation.provider)}26` }}
+          >
+            <MessageSquare className="h-4 w-4" style={{ color: providerColor(conversation.provider) }} strokeWidth={1.75} />
+          </div>
+          <h3 className="truncate text-body font-semibold text-[var(--text-primary)]">
+            {conversation.title}
+          </h3>
+        </div>
+
+        {conversation.limitReached && (
+          <div className="mb-3 flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1.5 text-[11px] font-medium text-amber-500">
+            <AlertTriangle className="h-3 w-3" />
+            Limit reached — continue this elsewhere
+          </div>
+        )}
+        <p className="mb-4 flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)]">
+          <span
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ background: providerColor(conversation.provider) }}
+          />
+          {providerLabel(conversation.provider)} · {conversation.messages.length} messages · captured{" "}
+          {new Date(conversation.capturedAt).toLocaleDateString()}
+        </p>
+        <p className="mb-3 flex-1 text-small text-[var(--text-secondary)]">{preview}</p>
+
+        {conversation.insights && conversation.insights.topics.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-1.5">
+            {conversation.insights.topics.map((topic) => (
+              <span
+                key={topic}
+                className="rounded-full bg-[var(--accent)]/10 px-2.5 py-1 text-[11px] font-medium text-[var(--accent)]"
+              >
+                {topic}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {error && <p className="mb-3 text-[11px] text-red-500">{error}</p>}
+
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="glass" onClick={onView}>
+            <Eye className="h-3.5 w-3.5" />
+            View
+          </Button>
+          {conversation.limitReached && onContinue && (
+            <Button size="sm" onClick={() => onContinue(conversation.id)}>
+              <ArrowRightCircle className="h-3.5 w-3.5" />
+              Continue in another LLM
+            </Button>
+          )}
+          {!conversation.insights && onGenerateInsights && (
+            <Button size="sm" variant="ghost" onClick={handleGenerate} disabled={generating}>
+              <Sparkles className="h-3.5 w-3.5" />
+              {generating ? "Generating…" : "Generate insights"}
+            </Button>
+          )}
+          {onDelete && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onDelete}
+              className="text-red-500 hover:bg-red-500/10"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+      </GlassPanel>
+    </motion.div>
+  );
+}
