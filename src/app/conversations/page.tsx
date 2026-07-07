@@ -13,8 +13,15 @@ import { useConversations } from "@/lib/conversations/use-conversations";
 import type { Conversation } from "@/types/conversation";
 
 export default function ConversationsPage() {
-  const { hydrated, conversations, importCapsule, deleteConversation, deleteConversations, generateInsights } =
-    useConversations();
+  const {
+    hydrated,
+    conversations,
+    importCapsule,
+    deleteConversation,
+    deleteConversations,
+    generateInsights,
+    getHandoff,
+  } = useConversations();
   const [viewing, setViewing] = useState<Conversation | null>(null);
   const [importing, setImporting] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
@@ -43,7 +50,7 @@ export default function ConversationsPage() {
 
   const handleBulkDelete = () => {
     if (selectedIds.size === 0) return;
-    // Conversations are the source of truth for every other feature —
+    // Conversations are the source of truth for every other feature --
     // deleting them here cascades into Timeline, Knowledge Graph, and
     // Capsules automatically via the recovery store's sync effect.
     if (
@@ -82,7 +89,7 @@ export default function ConversationsPage() {
           <p className="mt-3 max-w-[560px] text-body text-[var(--text-secondary)]">
             Capture conversations from ChatGPT or Claude with the Noetis
             Capture browser extension. With auto-push enabled they appear
-            here automatically while this app is running — or import a
+            here automatically while this app is running -- or import a
             Capsule file manually below.
           </p>
           <Button className="mt-6" variant="glass" onClick={() => setImporting(true)}>
@@ -142,6 +149,7 @@ export default function ConversationsPage() {
                     conversation={conversation}
                     onView={() => setViewing(conversation)}
                     onGenerateInsights={generateInsights}
+                    onShare={getHandoff}
                     selectable={selectMode}
                     selected={selectedIds.has(conversation.id)}
                     onToggleSelect={() => toggleSelected(conversation.id)}

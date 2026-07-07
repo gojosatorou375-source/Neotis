@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, CheckCircle2, FileText, Lightbulb, MessageSquare, PackagePlus, Sparkles } from "lucide-react";
-import { GlassPanel } from "@/components/glass-panel";
+import { Check, PackagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/recovery/status-badge";
+import { TranscriptView } from "@/components/recovery/transcript-view";
 import { PLATFORM_META } from "@/lib/recovery/platform-meta";
-import { relatedConversations } from "@/lib/recovery/derive";
 import type { Conversation } from "@/types/recovery";
 
 interface ConversationDashboardProps {
@@ -18,10 +17,22 @@ interface ConversationDashboardProps {
   onSaveAsCapsule: (conversationId: string, name: string) => void;
 }
 
+/**
+ * Shows exactly one conversation: its own back-and-forth transcript, styled
+ * like ChatGPT/Claude/etc. show it, and nothing else. This used to also
+ * render a stack of AI-derived metadata cards (summary, keyword chips,
+ * project timeline, prompts-used digest, generated-files list, follow-up
+ * tasks, related-conversations matches) above the transcript -- all useful
+ * in the abstract, but it meant opening a saved conversation showed a report
+ * *about* it instead of the conversation itself, which is what someone
+ * actually wants when they come back to pick up where they left off.
+ * `allConversations`/`onSelect` stay in the prop signature (unused here for
+ * now) so a future "related conversations" surface can live elsewhere --
+ * e.g. the workspace explorer sidebar -- without this component's callers
+ * needing to change.
+ */
 export function ConversationDashboard({
   conversation,
-  allConversations,
-  onSelect,
   onSaveAsCapsule,
 }: ConversationDashboardProps) {
   const [saved, setSaved] = useState(false);
@@ -36,10 +47,6 @@ export function ConversationDashboard({
 
   const meta = PLATFORM_META[conversation.platform];
   const Icon = meta.icon;
-  const timeline = allConversations
-    .filter((c) => c.project === conversation.project)
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-  const related = relatedConversations(conversation, allConversations, 4);
 
   return (
     <motion.div
@@ -56,7 +63,7 @@ export function ConversationDashboard({
           <span>·</span>
           {conversation.project}
         </div>
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-section text-[var(--text-primary)]">{conversation.title}</h1>
           <div className="flex items-center gap-3">
             <StatusBadge status={conversation.status} />
@@ -81,135 +88,7 @@ export function ConversationDashboard({
           </div>
         </div>
 
-        <GlassPanel className="mb-6 p-6">
-          <div className="mb-3 flex items-center gap-2 text-small font-semibold text-[var(--text-primary)]">
-            <Sparkles className="h-4 w-4 text-[var(--accent)]" />
-            AI Context Summary
-          </div>
-          <p className="text-body text-[var(--text-secondary)]">{conversation.summary}</p>
-          {conversation.keywords.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {conversation.keywords.map((k) => (
-                <span
-                  key={k}
-                  className="rounded-full bg-black/5 px-2.5 py-1 text-[11px] text-[var(--text-secondary)] dark:bg-white/5"
-                >
-                  {k}
-                </span>
-              ))}
-            </div>
-          )}
-        </GlassPanel>
-
-        <GlassPanel className="mb-6 p-6">
-          <div className="mb-4 flex items-center gap-2 text-small font-semibold text-[var(--text-primary)]">
-            <CheckCircle2 className="h-4 w-4 text-[var(--success)]" />
-            Project Timeline — {conversation.project}
-          </div>
-          <ol className="space-y-3 border-l border-[var(--border)] pl-4">
-            {timeline.map((step) => (
-              <li key={step.id} className="relative">
-                <span
-                  className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full"
-                  style={{ background: step.id === conversation.id ? "var(--accent)" : "var(--border)" }}
-                />
-                <button
-                  type="button"
-                  onClick={() => onSelect(step.id)}
-                  className="text-left"
-                >
-                  <span className="text-small font-medium text-[var(--text-primary)] hover:underline">
-                    {step.platform} — {step.title}
-                  </span>
-                  <span className="ml-2 text-[11px] text-[var(--text-secondary)]">
-                    {new Date(step.createdAt).toLocaleDateString()}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ol>
-        </GlassPanel>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <GlassPanel className="p-6">
-            <div className="mb-3 flex items-center gap-2 text-small font-semibold text-[var(--text-primary)]">
-              <MessageSquare className="h-4 w-4 text-[var(--accent)]" />
-              Prompts Used
-            </div>
-            <ul className="space-y-2">
-              {conversation.prompts.slice(0, 5).map((p, i) => (
-                <li key={i} className="text-small text-[var(--text-secondary)] line-clamp-2">
-                  {p}
-                </li>
-              ))}
-              {conversation.prompts.length === 0 && (
-                <li className="text-small text-[var(--text-secondary)]">No prompts recorded.</li>
-              )}
-            </ul>
-          </GlassPanel>
-
-          <GlassPanel className="p-6">
-            <div className="mb-3 flex items-center gap-2 text-small font-semibold text-[var(--text-primary)]">
-              <FileText className="h-4 w-4 text-[var(--accent)]" />
-              Generated Files
-            </div>
-            <ul className="space-y-2">
-              {conversation.files.length > 0 ? (
-                conversation.files.map((f) => (
-                  <li key={f} className="text-small text-[var(--text-secondary)]">
-                    {f}
-                  </li>
-                ))
-              ) : (
-                <li className="text-small text-[var(--text-secondary)]">No files generated in this thread.</li>
-              )}
-            </ul>
-          </GlassPanel>
-        </div>
-
-        <GlassPanel className="mb-6 p-6">
-          <div className="mb-3 flex items-center gap-2 text-small font-semibold text-[var(--text-primary)]">
-            <Lightbulb className="h-4 w-4 text-amber-500" />
-            Remaining Tasks
-          </div>
-          {conversation.followUpTasks.length > 0 ? (
-            <ul className="space-y-2">
-              {conversation.followUpTasks.map((t, i) => (
-                <li key={i} className="flex items-start gap-2 text-small text-[var(--text-primary)]">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                  {t}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-small text-[var(--text-secondary)]">
-              No open tasks detected — this thread looks complete.
-            </p>
-          )}
-        </GlassPanel>
-
-        {related.length > 0 && (
-          <GlassPanel className="p-6">
-            <div className="mb-3 text-small font-semibold text-[var(--text-primary)]">
-              Related Conversations
-            </div>
-            <div className="space-y-2">
-              {related.map(({ conversation: rc, score }) => (
-                <button
-                  key={rc.id}
-                  type="button"
-                  onClick={() => onSelect(rc.id)}
-                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left hover:bg-black/5 dark:hover:bg-white/5"
-                >
-                  <span className="truncate text-small text-[var(--text-primary)]">{rc.title}</span>
-                  <span className="ml-3 shrink-0 text-[11px] text-[var(--text-secondary)]">
-                    {Math.round(score * 100)}%
-                  </span>
-                </button>
-              ))}
-            </div>
-          </GlassPanel>
-        )}
+        <TranscriptView messages={conversation.conversationHistory} />
       </div>
     </motion.div>
   );

@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
   Boxes,
@@ -16,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GlassPanel } from "@/components/glass-panel";
+import { InterviewChoiceDialog } from "@/components/interview-choice-dialog";
 import { TOTAL_QUESTIONS } from "@/lib/questions";
 import type { Persona } from "@/types/persona";
 
@@ -88,6 +91,9 @@ const features = [
 ];
 
 export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: LandingProps) {
+  const router = useRouter();
+  const [showChoice, setShowChoice] = useState(false);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -121,9 +127,7 @@ export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: L
           transition={{ delay: 0.3, duration: 0.6 }}
           className="mt-6 max-w-[560px] text-body text-[var(--text-secondary)]"
         >
-          Answer 10 short questions. Get a personalized AI_PROFILE.md that
-          teaches every AI assistant how you like to communicate, learn, and
-          receive advice.
+          Document your personal AI preferences and project knowledge. Generate portable profiles that teach every AI assistant how to work with you and your codebase.
         </motion.p>
 
         <motion.div
@@ -132,10 +136,12 @@ export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: L
           transition={{ delay: 0.4, duration: 0.6 }}
           className="mt-10"
         >
-          <Button size="lg" onClick={onStart} className="group">
-            {hasSavedProgress ? "Continue interview" : "Begin interview"}
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          </Button>
+          <Link href="/recovery?tab=skills">
+            <Button size="lg" className="group">
+              Get started
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Button>
+          </Link>
         </motion.div>
 
         <motion.p
@@ -144,7 +150,7 @@ export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: L
           transition={{ delay: 0.5, duration: 0.6 }}
           className="mt-4 text-small text-[var(--text-secondary)]"
         >
-          Takes about 3 minutes · {TOTAL_QUESTIONS} questions
+          Takes about 3–5 minutes per profile
         </motion.p>
 
         {personas.length > 0 && (
@@ -327,7 +333,22 @@ export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: L
           </div>
         </GlassPanel>
       </motion.div>
-    
+
+      <AnimatePresence>
+        {showChoice && (
+          <InterviewChoiceDialog
+            onClose={() => setShowChoice(false)}
+            onChoosePersonal={() => {
+              setShowChoice(false);
+              onStart();
+            }}
+            onChooseProject={() => {
+              setShowChoice(false);
+              router.push("/skills/new?mode=project");
+            }}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

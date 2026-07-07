@@ -14,3 +14,8 @@ export interface InterviewState {
   currentIndex: number;
   answers: Answers;
 }
+
+export interface DocumentGenerationResult {
+  markdown: string;
+  usedAI: boolean;
+}

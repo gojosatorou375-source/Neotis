@@ -4,27 +4,35 @@
     <meta charset="utf-8" />
     <style>
       :root {
-        color-scheme: light dark;
-        --accent: #0a84ff;
-        --accent-soft: rgba(10, 132, 255, 0.12);
-        --danger: #ff3b30;
-        --bg: #f2f2f7;
+        --accent: #0f766e; /* Teal accent to match Noetis */
+        --accent-hover: #115e59;
+        --accent-soft: rgba(15, 118, 110, 0.08);
+        --accent-soft-hover: rgba(15, 118, 110, 0.15);
+        --danger: #ef4444;
+        --danger-soft: rgba(239, 68, 68, 0.08);
+        --success: #10b981;
+        --bg: #fafafa;
         --panel: #ffffff;
-        --ink: #1c1c1e;
-        --sub: #8a8a8e;
-        --separator: rgba(60, 60, 67, 0.16);
-        --header: rgba(0, 0, 0, 0.4);
+        --border: #e5e7eb;
+        --text-primary: #111827;
+        --text-secondary: #4b5563;
+        --text-tertiary: #9ca3af;
       }
       @media (prefers-color-scheme: dark) {
         :root {
-          --accent: #0a84ff;
-          --accent-soft: rgba(10, 132, 255, 0.18);
-          --bg: #000000;
-          --panel: #1c1c1e;
-          --ink: #f5f5f7;
-          --sub: #8e8e93;
-          --separator: rgba(84, 84, 88, 0.5);
-          --header: rgba(255, 255, 255, 0.5);
+          --accent: #14b8a6;
+          --accent-hover: #2dd4bf;
+          --accent-soft: rgba(20, 184, 166, 0.1);
+          --accent-soft-hover: rgba(20, 184, 166, 0.18);
+          --danger: #f87171;
+          --danger-soft: rgba(248, 113, 113, 0.1);
+          --success: #34d399;
+          --bg: #090d16;
+          --panel: #111827;
+          --border: #1f2937;
+          --text-primary: #f9fafb;
+          --text-secondary: #9ca3af;
+          --text-tertiary: #6b7280;
         }
       }
       * {
@@ -32,78 +40,102 @@
         -webkit-font-smoothing: antialiased;
       }
       body {
-        width: 340px;
+        width: 350px;
         margin: 0;
-        padding: 0 0 14px;
-        font-family: -apple-system, "SF Pro Text", "SF Pro Display", Inter, system-ui, sans-serif;
-        color: var(--ink);
+        padding: 0 0 12px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--text-primary);
         background: var(--bg);
       }
 
-      /* ---------- Header ---------- */
+      /* ---------- Top Bar ---------- */
       .topbar {
         display: flex;
         align-items: center;
-        gap: 9px;
-        padding: 16px 16px 4px;
+        justify-content: space-between;
+        padding: 16px 16px 8px;
+        border-bottom: 1px solid var(--border);
       }
-      .topbar h1 {
-        font-size: 16px;
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .brand h1 {
+        font-size: 15px;
         font-weight: 600;
-        letter-spacing: -0.01em;
         margin: 0;
+        letter-spacing: -0.01em;
       }
-      .topbar .mark {
-        flex-shrink: 0;
+      .connection-badge {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 3px 8px;
+        border-radius: 9999px;
+        background: var(--border);
+        color: var(--text-secondary);
       }
+      .connection-badge.connected {
+        background: rgba(16, 185, 129, 0.12);
+        color: var(--success);
+      }
+      .connection-badge .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--text-tertiary);
+      }
+      .connection-badge.connected .dot {
+        background: var(--success);
+      }
+
       p.hint {
         font-size: 12px;
-        color: var(--sub);
-        margin: 4px 16px 16px;
-        line-height: 1.45;
+        color: var(--text-secondary);
+        margin: 12px 16px 14px;
+        line-height: 1.4;
       }
 
-      /* ---------- Grouped section label (iOS Settings style) ---------- */
+      /* ---------- Group Panel Cards ---------- */
       .section-label {
         font-size: 11px;
-        font-weight: 590;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.03em;
-        color: var(--sub);
-        margin: 20px 16px 6px;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        margin: 16px 16px 6px;
       }
-
-      /* ---------- Grouped inset panel ---------- */
-      .group {
+      .group-card {
         margin: 0 12px;
         border-radius: 12px;
         background: var(--panel);
+        border: 1px solid var(--border);
         overflow: hidden;
-        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
       }
       .row {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 11px 12px;
-        border-bottom: 0.5px solid var(--separator);
-        min-height: 20px;
+        justify-content: space-between;
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
       }
       .row:last-child {
         border-bottom: none;
       }
       .row-label {
-        flex: 1;
-        font-size: 13.5px;
-        font-weight: 400;
+        font-size: 13px;
+        font-weight: 500;
       }
 
-      /* ---------- iOS-style toggle switch ---------- */
+      /* ---------- Inputs & Controls ---------- */
       .switch {
         position: relative;
         display: inline-block;
-        width: 38px;
-        height: 22px;
+        width: 36px;
+        height: 20px;
         flex-shrink: 0;
       }
       .switch input {
@@ -114,117 +146,157 @@
       .switch .track {
         position: absolute;
         inset: 0;
-        background: rgba(120, 120, 128, 0.32);
-        border-radius: 22px;
-        transition: background 0.18s ease;
+        background: var(--border);
+        border-radius: 20px;
+        transition: background 0.15s ease;
+        cursor: pointer;
       }
       .switch .track::before {
         content: "";
         position: absolute;
-        height: 18px;
-        width: 18px;
+        height: 16px;
+        width: 16px;
         left: 2px;
         top: 2px;
         border-radius: 50%;
         background: white;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-        transition: transform 0.18s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+        transition: transform 0.15s ease;
       }
       .switch input:checked + .track {
-        background: #34c759;
+        background: var(--accent);
       }
       .switch input:checked + .track::before {
         transform: translateX(16px);
       }
 
-      /* ---------- Text fields (iOS Settings row inputs) ---------- */
       .field-row {
         flex-direction: column;
         align-items: stretch;
-        gap: 4px;
+        gap: 6px;
       }
-      .field-row .field-label {
-        font-size: 11px;
-        font-weight: 590;
-        color: var(--sub);
+      .field-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .field-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .badge-dev {
+        font-size: 9px;
+        font-weight: 600;
+        color: var(--accent);
+        background: var(--accent-soft);
+        padding: 1px 5px;
+        border-radius: 4px;
         text-transform: uppercase;
         letter-spacing: 0.02em;
+        display: none;
       }
-      .field-row input[type="text"] {
-        border: none;
-        background: transparent;
-        font-size: 13.5px;
+      .input-control {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg);
+        font-size: 13px;
         font-family: inherit;
-        color: var(--ink);
-        padding: 0;
+        color: var(--text-primary);
+        padding: 8px 10px;
         outline: none;
+        transition: border-color 0.15s ease;
       }
-      .field-row input[type="text"]::placeholder {
-        color: var(--sub);
+      .input-control:focus {
+        border-color: var(--accent);
+      }
+      .input-group {
+        display: flex;
+        gap: 6px;
+        width: 100%;
+      }
+      .input-group input {
+        flex: 1;
+      }
+      .icon-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.12s ease;
+      }
+      .icon-btn:hover {
+        background: var(--bg);
+        color: var(--text-primary);
+      }
+      .icon-btn.danger:hover {
+        background: var(--danger-soft);
+        color: var(--danger);
+        border-color: var(--danger);
       }
 
-      /* ---------- Buttons ---------- */
+      /* ---------- Actions ---------- */
       .actions {
         margin: 16px 12px 0;
         display: flex;
         flex-direction: column;
         gap: 8px;
       }
-      button {
+      button.action-btn {
         width: 100%;
         border: none;
-        border-radius: 11px;
-        padding: 11px 14px;
+        border-radius: 10px;
+        padding: 10px 14px;
         font-size: 13.5px;
-        font-weight: 590;
+        font-weight: 600;
         cursor: pointer;
         font-family: inherit;
-        transition: opacity 0.12s ease, background 0.12s ease;
+        transition: background 0.12s ease, opacity 0.12s ease;
       }
-      button:active {
-        opacity: 0.7;
+      button.action-btn:active {
+        opacity: 0.85;
       }
-      button:disabled {
+      button.action-btn:disabled {
         opacity: 0.45;
         cursor: default;
       }
-      .primary {
+      .primary-btn {
         background: var(--accent);
         color: white;
       }
-      .secondary {
-        background: var(--accent-soft);
-        color: var(--accent);
+      .primary-btn:hover {
+        background: var(--accent-hover);
       }
-      .plain {
-        background: transparent;
-        color: var(--sub);
-        padding: 8px 14px;
+      .secondary-btn {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
       }
-      .plain.danger {
-        color: var(--danger);
-      }
-      .footer-actions {
-        display: flex;
-        gap: 6px;
-        margin: 4px 12px 0;
-      }
-      .footer-actions button {
-        flex: 1;
+      .secondary-btn:hover {
+        background: var(--bg);
       }
 
-      /* ---------- Status + progress ---------- */
+      /* ---------- Status ---------- */
       .status {
         font-size: 12px;
-        color: var(--sub);
+        color: var(--text-secondary);
         margin: 10px 16px 0;
-        min-height: 14px;
+        min-height: 15px;
         line-height: 1.4;
       }
       .progress-track {
         height: 4px;
         border-radius: 2px;
-        background: var(--separator);
+        background: var(--border);
         overflow: hidden;
         margin: 10px 16px 0;
         display: none;
@@ -236,19 +308,19 @@
         transition: width 0.2s ease;
       }
 
-      /* ---------- Captured list ---------- */
+      /* ---------- Captured List ---------- */
       ul {
         list-style: none;
         margin: 0;
         padding: 0;
-        max-height: 216px;
+        max-height: 180px;
         overflow-y: auto;
       }
       ul::-webkit-scrollbar {
         width: 5px;
       }
       ul::-webkit-scrollbar-thumb {
-        background: rgba(120, 120, 128, 0.35);
+        background: var(--border);
         border-radius: 3px;
       }
       li.capture-row {
@@ -257,81 +329,130 @@
         align-items: center;
         gap: 8px;
         padding: 10px 12px;
-        border-bottom: 0.5px solid var(--separator);
+        border-bottom: 1px solid var(--border);
         font-size: 12.5px;
+        position: relative;
       }
       li.capture-row:last-child {
         border-bottom: none;
       }
-      li.capture-row .dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        flex-shrink: 0;
-      }
       li.capture-row .meta {
         display: flex;
         align-items: center;
-        gap: 7px;
+        gap: 8px;
         overflow: hidden;
         min-width: 0;
+        flex: 1;
+      }
+      li.capture-row .provider-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        font-size: 9px;
+        font-weight: 700;
+        color: white;
+        flex-shrink: 0;
       }
       li.capture-row .meta span.label {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      li.capture-row button.delete {
-        width: auto;
-        flex-shrink: 0;
-        padding: 4px 8px;
+      li.capture-row .delete-btn {
+        opacity: 0;
+        transition: opacity 0.15s ease;
+        padding: 4px;
         background: transparent;
+        border: none;
+        color: var(--text-tertiary);
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      li.capture-row:hover .delete-btn {
+        opacity: 1;
+      }
+      li.capture-row .delete-btn:hover {
         color: var(--danger);
-        font-size: 11.5px;
-        font-weight: 500;
-        opacity: 0.85;
+        background: var(--danger-soft);
       }
       .empty {
         font-size: 12.5px;
-        color: var(--sub);
+        color: var(--text-secondary);
         text-align: center;
-        padding: 22px 12px;
+        padding: 24px 12px;
+      }
+
+      /* ---------- Footer Buttons ---------- */
+      .footer-actions {
+        display: flex;
+        gap: 8px;
+        margin: 12px 12px 0;
+      }
+      .footer-actions button.plain-btn {
+        flex: 1;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.12s ease;
+      }
+      .footer-actions button.plain-btn:hover {
+        background: var(--bg);
+        color: var(--text-primary);
+      }
+      .footer-actions button.plain-btn.danger-btn:hover {
+        color: var(--danger);
+        background: var(--danger-soft);
+        border-color: var(--danger);
       }
     </style>
   </head>
   <body>
     <div class="topbar">
-      <svg class="mark" width="22" height="22" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="noetisPopupMark" x1="6" y1="10" x2="58" y2="46" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#1c6b74" />
-            <stop offset="55%" stop-color="#3f8f8a" />
-            <stop offset="100%" stop-color="#d8a548" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M8 20C8 14 17 10 32 16C47 10 56 14 56 20V44C56 44 47 38 32 44C17 38 8 44 8 44V20Z"
-          stroke="url(#noetisPopupMark)"
-          stroke-width="4"
-          stroke-linejoin="round"
-          stroke-linecap="round"
-        />
-        <path d="M32 16V44" stroke="url(#noetisPopupMark)" stroke-width="3.5" stroke-linecap="round" />
-        <path d="M32 16V8" stroke="url(#noetisPopupMark)" stroke-width="3.5" stroke-linecap="round" />
-        <path d="M32 8L21 13" stroke="url(#noetisPopupMark)" stroke-width="2.5" stroke-linecap="round" />
-        <path d="M32 8L43 13" stroke="url(#noetisPopupMark)" stroke-width="2.5" stroke-linecap="round" />
-        <circle cx="32" cy="8" r="4.5" fill="url(#noetisPopupMark)" />
-        <circle cx="21" cy="13" r="3" fill="url(#noetisPopupMark)" />
-        <circle cx="43" cy="13" r="3" fill="url(#noetisPopupMark)" />
-      </svg>
-      <h1>Noetis Capture</h1>
+      <div class="brand">
+        <svg class="mark" width="20" height="20" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="noetisPopupMark" x1="6" y1="10" x2="58" y2="46" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#14b8a6" />
+              <stop offset="55%" stop-color="#0f766e" />
+              <stop offset="100%" stop-color="#d8a548" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M8 20C8 14 17 10 32 16C47 10 56 14 56 20V44C56 44 47 38 32 44C17 38 8 44 8 44V20Z"
+            stroke="url(#noetisPopupMark)"
+            stroke-width="4"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+          />
+          <path d="M32 16V44" stroke="url(#noetisPopupMark)" stroke-width="3.5" stroke-linecap="round" />
+          <path d="M32 16V8" stroke="url(#noetisPopupMark)" stroke-width="3.5" stroke-linecap="round" />
+          <path d="M32 8L21 13" stroke="url(#noetisPopupMark)" stroke-width="2.5" stroke-linecap="round" />
+          <path d="M32 8L43 13" stroke="url(#noetisPopupMark)" stroke-width="2.5" stroke-linecap="round" />
+          <circle cx="32" cy="8" r="4.5" fill="url(#noetisPopupMark)" />
+          <circle cx="21" cy="13" r="3" fill="url(#noetisPopupMark)" />
+          <circle cx="43" cy="13" r="3" fill="url(#noetisPopupMark)" />
+        </svg>
+        <h1>Noetis Capture</h1>
+      </div>
+      <div id="connectionBadge" class="connection-badge">
+        <span class="dot"></span>
+        <span id="connectionText">Checking</span>
+      </div>
     </div>
     <p class="hint">
-      Open a ChatGPT or Claude conversation, then capture it here. With
-      auto-push on, each capture is sent straight to your Noetis app.
+      Capture ChatGPT or Claude conversations. Auto-push forwards them immediately to your Noetis app.
     </p>
 
-    <div class="group">
+    <div class="section-label">Connection Settings</div>
+    <div class="group-card">
       <label class="row" for="autoPush">
         <span class="row-label">Auto-push to Noetis</span>
         <span class="switch">
@@ -340,30 +461,54 @@
         </span>
       </label>
       <div class="row field-row">
-        <span class="field-label">Base URL</span>
-        <input type="text" id="baseUrl" placeholder="https://noetis.vercel.app" />
+        <div class="field-header">
+          <span class="field-label">Base URL</span>
+          <span id="badgeDev" class="badge-dev">Local Dev</span>
+        </div>
+        <input type="text" id="baseUrl" class="input-control" placeholder="https://noetis.vercel.app" />
       </div>
       <div class="row field-row">
         <span class="field-label">Access key</span>
-        <input type="text" id="accessKey" placeholder="Matches NEXT_PUBLIC_APP_ACCESS_KEY" />
+        <div class="input-group">
+          <input type="password" id="accessKey" class="input-control" placeholder="NEXT_PUBLIC_APP_ACCESS_KEY" />
+          <button type="button" id="toggleKey" class="icon-btn" title="Toggle visibility">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+          <button type="button" id="copyKey" class="icon-btn" title="Copy key">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          <button type="button" id="resetKey" class="icon-btn danger" title="Clear / Reset Key">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="row field-row">
+        <span class="field-label">Active Skill (for Skills.md)</span>
+        <select id="activeSkill" class="input-control">
+          <option value="">All Skills (Concatenated)</option>
+        </select>
+      </div>
+      <div class="row" style="padding: 10px 12px; align-items: center; justify-content: space-between;">
+        <span class="row-label" style="font-size: 12px; color: var(--text-secondary);">Floating Button</span>
+        <button type="button" id="resetPosition" class="plain-btn" style="width: auto; padding: 4px 10px; margin: 0; font-size: 11px; height: auto; border-radius: 6px;">Reset Position</button>
       </div>
     </div>
 
     <div class="actions">
-      <button id="capture" class="primary">Capture this tab</button>
-      <button id="captureAll" class="secondary">Capture all recent</button>
+      <button id="capture" class="action-btn primary-btn">Capture this tab</button>
+      <button id="captureAll" class="action-btn secondary-btn">Capture all recent</button>
     </div>
     <div id="progressTrack" class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
     <div id="status" class="status"></div>
 
-    <div class="section-label">Captured</div>
-    <div class="group">
+    <div class="section-label">Captured Conversations</div>
+    <div class="group-card">
       <ul id="list"></ul>
     </div>
 
     <div class="footer-actions">
-      <button id="download" class="plain">Download JSON</button>
-      <button id="clear" class="plain danger">Clear all</button>
+      <button id="download" class="plain-btn">Download JSON</button>
+      <button id="clear" class="plain-btn danger-btn">Clear all</button>
     </div>
     <script src="popup.js"></script>
   </body>

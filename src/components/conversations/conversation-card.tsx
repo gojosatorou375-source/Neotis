@@ -2,11 +2,20 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, ArrowRightCircle, Check, Eye, MessageSquare, Sparkles, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowRightCircle, Check, Eye, MessageSquare, Send, Sparkles, Trash2 } from "lucide-react";
 import { GlassPanel } from "@/components/glass-panel";
 import { Button } from "@/components/ui/button";
+import { HandoffDialog } from "@/components/conversations/handoff-dialog";
 import { providerColor, providerLabel } from "@/lib/conversations/provider-style";
 import type { Conversation } from "@/types/conversation";
+
+interface HandoffResult {
+  ok: boolean;
+  markdown?: string;
+  title?: string;
+  usedAI?: boolean;
+  error?: string;
+}
 
 interface ConversationCardProps {
   conversation: Conversation;
@@ -14,6 +23,10 @@ interface ConversationCardProps {
   onDelete?: () => void;
   onGenerateInsights?: (id: string) => Promise<{ ok: boolean; error?: string }>;
   onContinue?: (id: string) => void;
+  /** AI-processed Markdown handoff -- distills this conversation into a brief
+   * meant to be pasted into a different LLM. Present on every list that
+   * reads from useConversations()'s getHandoff(). */
+  onShare?: (id: string) => Promise<HandoffResult>;
   /** When set, the card renders in bulk-select mode: clicking it toggles
    * selection instead of opening the viewer, and a checkmark badge shows
    * the current state. */
@@ -28,12 +41,15 @@ export function ConversationCard({
   onDelete,
   onGenerateInsights,
   onContinue,
+  onShare,
   selectable,
   selected,
   onToggleSelect,
 }: ConversationCardProps) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [handoff, setHandoff] = useState<HandoffResult | null>(null);
   const preview =
     conversation.insights?.summary || conversation.messages[0]?.content?.slice(0, 140) || "No content captured.";
 
@@ -44,6 +60,19 @@ export function ConversationCard({
     const result = await onGenerateInsights(conversation.id);
     setGenerating(false);
     if (!result.ok) setError(result.error ?? "Extraction failed.");
+  };
+
+  const handleShare = async () => {
+    if (!onShare) return;
+    setSharing(true);
+    setError(null);
+    const result = await onShare(conversation.id);
+    setSharing(false);
+    if (!result.ok) {
+      setError(result.error ?? "Handoff generation failed.");
+      return;
+    }
+    setHandoff(result);
   };
 
   return (
@@ -87,7 +116,7 @@ export function ConversationCard({
         {conversation.limitReached && (
           <div className="mb-3 flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1.5 text-[11px] font-medium text-amber-500">
             <AlertTriangle className="h-3 w-3" />
-            Limit reached — continue this elsewhere
+            Limit reached -- continue this elsewhere
           </div>
         )}
         <p className="mb-4 flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)]">
@@ -133,6 +162,12 @@ export function ConversationCard({
                 {generating ? "Generating…" : "Generate insights"}
               </Button>
             )}
+            {onShare && (
+              <Button size="sm" variant="ghost" onClick={handleShare} disabled={sharing}>
+                <Send className="h-3.5 w-3.5" />
+                {sharing ? "Processing…" : "Share to another LLM"}
+              </Button>
+            )}
             {onDelete && (
               <Button
                 size="sm"
@@ -146,6 +181,16 @@ export function ConversationCard({
           </div>
         )}
       </GlassPanel>
+
+      {handoff?.markdown && (
+        <HandoffDialog
+          title={conversation.title}
+          markdown={handoff.markdown}
+          usedAI={handoff.usedAI}
+          filename={handoff.title}
+          onClose={() => setHandoff(null)}
+        />
+      )}
     </motion.div>
   );
 }

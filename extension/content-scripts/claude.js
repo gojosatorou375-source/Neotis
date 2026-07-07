@@ -1,6 +1,6 @@
 // Captures the visible conversation on a claude.ai tab.
 //
-// NOTE ON FRAGILITY: same caveat as the ChatGPT content script — Claude has
+// NOTE ON FRAGILITY: same caveat as the ChatGPT content script -- Claude has
 // no public real-time export API, so this reads the rendered DOM. Claude's
 // selectors change more often than ChatGPT's; if capture returns 0 messages,
 // open devtools on a conversation, inspect a user/assistant bubble, and
@@ -98,7 +98,7 @@
 
   // --- Usage-limit detection -------------------------------------------
   // NOTE ON FRAGILITY: plain-text phrase scan, not an API signal (there
-  // isn't one) — if Claude rewords its limit banner, update LIMIT_PHRASES.
+  // isn't one) -- if Claude rewords its limit banner, update LIMIT_PHRASES.
   const LIMIT_PHRASES = [
     /reached (your|the) (usage|message) limit/i,
     /usage limit/i,
@@ -130,4 +130,37 @@
   });
   observer.observe(document.body, { childList: true, subtree: true });
   scanForLimitBanner(); // in case the banner is already showing on load
+
+  // --- In-page "Save to Noetis" button -----------------------------------
+  // Docks inline in the composer's own icon row (next to the attach/voice
+  // buttons) when it can find one of those icons -- see capture-widget.js,
+  // loaded just before this file (manifest.json order matters). Falls back
+  // to floating near the Send button, then a fixed corner. Candidate
+  // selectors are best-effort -- Claude's markup changes more often than
+  // ChatGPT's, so if the button lands in the fallback bottom-right corner
+  // instead of docked in the composer, inspect the composer in devtools and
+  // add the current selector to the front of the relevant list.
+  if (window.NoetisCapture) {
+    window.NoetisCapture.mount({
+      provider: "claude",
+      extractConversation,
+      dockAnchorSelectors: [
+        'button[aria-haspopup="menu"]',
+        'button[aria-label*="model" i]',
+        'button[aria-label*="Sonnet" i]',
+        'button[aria-label*="Claude" i]',
+        'button[aria-label="Attach"]',
+        'button[aria-label*="voice" i]',
+        'button[aria-label*="dictate" i]',
+      ],
+      anchorSelectors: [
+        'button[aria-label="Send Message"]',
+        'button[aria-label="Send message"]',
+        'form button[type="submit"]',
+      ],
+      // Used only by the "Paste" button. Claude's composer is a
+      // ProseMirror-based contenteditable div, not a <textarea>.
+      composerSelectors: ['div[contenteditable="true"].ProseMirror', 'div[contenteditable="true"]'],
+    });
+  }
 })();

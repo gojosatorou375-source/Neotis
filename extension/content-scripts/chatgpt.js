@@ -1,7 +1,7 @@
 // Captures the visible conversation on a chatgpt.com / chat.openai.com tab.
 //
 // NOTE ON FRAGILITY: this reads the live DOM rather than calling an official
-// export API (OpenAI doesn't offer one for real-time/automatic access — only
+// export API (OpenAI doesn't offer one for real-time/automatic access -- only
 // a manual "export all data" request that arrives by email). ChatGPT's DOM
 // structure can change with any deploy, which will silently break the
 // selectors below. If capture stops working, open devtools on a conversation
@@ -77,7 +77,7 @@
 
   // --- Usage-limit detection -------------------------------------------
   // NOTE ON FRAGILITY: this is a plain-text phrase scan, not an API signal
-  // (there isn't one) — if ChatGPT rewords its limit banner, update
+  // (there isn't one) -- if ChatGPT rewords its limit banner, update
   // LIMIT_PHRASES. Kept deliberately broad/generic since exact wording shifts
   // over time and by plan tier.
   const LIMIT_PHRASES = [
@@ -110,4 +110,46 @@
   });
   observer.observe(document.body, { childList: true, subtree: true });
   scanForLimitBanner(); // in case the banner is already showing on load
+
+  // --- In-page "Save to Noetis" button -----------------------------------
+  // Docks inline in the composer's own icon row (next to the mic/voice
+  // buttons) when it can find one of those icons -- see capture-widget.js,
+  // loaded just before this file (manifest.json order matters). Falls back
+  // to floating near the Send button, then to a fixed corner. ChatGPT's
+  // Send button only exists in the DOM once you've typed something, which is
+  // why dockAnchorSelectors targets the mic/voice icons instead -- those are
+  // present even on an empty composer. All selectors here are best-effort;
+  // ChatGPT has changed this markup before, so if the button ends up in the
+  // fallback bottom-right corner instead of docked in the composer, inspect
+  // the composer in devtools and add the current selector to the front of
+  // the relevant list.
+  if (window.NoetisCapture) {
+    window.NoetisCapture.mount({
+      provider: "chatgpt",
+      extractConversation,
+      dockAnchorSelectors: [
+        'button[aria-haspopup="menu"]',
+        'button[aria-label*="model" i]',
+        'button[data-testid*="model" i]',
+        '[data-testid="composer-model-selector"]',
+        'button[data-testid="composer-speech-button"]',
+        'button[aria-label="Dictate button"]',
+        'button[aria-label*="voice" i]',
+        'button[aria-label*="dictate" i]',
+      ],
+      anchorSelectors: [
+        'button[data-testid="send-button"]',
+        'button[aria-label="Send message"]',
+        'form button[type="submit"]',
+      ],
+      // Used only by the "Paste" button (fills this in with a handoff
+      // shared from another provider). ChatGPT's composer is a
+      // contenteditable rich-text div, not a <textarea>, in current markup.
+      composerSelectors: [
+        '#prompt-textarea',
+        'div[contenteditable="true"]#prompt-textarea',
+        'form div[contenteditable="true"]',
+      ],
+    });
+  }
 })();

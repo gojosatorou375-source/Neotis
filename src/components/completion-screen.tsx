@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { BookmarkPlus, Check, Copy, Download, ListRestart, PenLine } from "lucide-react";
 import { GlassPanel } from "@/components/glass-panel";
 import { Button } from "@/components/ui/button";
 import { MarkdownPreview } from "@/components/markdown-preview";
 import { SavePersonaDialog } from "@/components/persona/save-persona-dialog";
-import { generateProfile } from "@/lib/generate-profile";
 import { copyMarkdown, downloadMarkdown } from "@/lib/markdown-file";
 import type { Answers } from "@/types";
 
@@ -29,7 +29,37 @@ export function CompletionScreen({
   const [copied, setCopied] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [savedAs, setSavedAs] = useState<string | null>(null);
-  const markdown = useMemo(() => generateProfile(answers), [answers]);
+  const [markdown, setMarkdown] = useState<string>("");
+  const [usedAI, setUsedAI] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchEnhanced = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/library/enhance", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            answers,
+            docType: "persona",
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setMarkdown(data.markdown);
+          setUsedAI(data.usedAI);
+        }
+      } catch (err) {
+        console.error("Failed to fetch enhanced document", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEnhanced();
+  }, [answers]);
 
   const handleCopy = async () => {
     await copyMarkdown(markdown);
@@ -48,6 +78,17 @@ export function CompletionScreen({
     setTimeout(() => setSavedAs(null), 3000);
   };
 
+  if (loading) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center">
+        <GlassPanel className="p-8 text-center space-y-4 max-w-sm">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-[var(--accent)] border-t-transparent" />
+          <p className="text-body text-[var(--text-secondary)] font-medium">Generating your AI Profile...</p>
+        </GlassPanel>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -65,8 +106,13 @@ export function CompletionScreen({
           <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--success)]/15">
             <Check className="h-7 w-7 text-[var(--success)]" strokeWidth={2} />
           </div>
-          <h2 className="text-section text-[var(--text-primary)]">
+          <h2 className="flex items-center justify-center gap-2 text-section text-[var(--text-primary)]">
             Your profile is ready
+            {usedAI && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent)]">
+                Enhanced by AI
+              </span>
+            )}
           </h2>
           <p className="mt-3 max-w-[520px] text-body text-[var(--text-secondary)]">
             AI_PROFILE.md is generated from your answers. Copy it into any
@@ -79,9 +125,9 @@ export function CompletionScreen({
           <MarkdownPreview markdown={markdown} />
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button onClick={() => handleDownload()}>
+            <Button onClick={() => handleDownload("AI_PROFILE.md")}>
               <Download className="h-4 w-4" />
-              Download AI_PROFILE.md
+              Download .md
             </Button>
             <Button variant="glass" onClick={handleCopy}>
               {copied ? (
@@ -89,7 +135,7 @@ export function CompletionScreen({
               ) : (
                 <Copy className="h-4 w-4" />
               )}
-              {copied ? "Copied" : "Copy Markdown"}
+              {copied ? "Copied to clipboard!" : "Copy as Prompt"}
             </Button>
             <Button variant="glass" onClick={() => setSaveOpen(true)}>
               {savedAs ? (
@@ -103,6 +149,11 @@ export function CompletionScreen({
               <PenLine className="h-4 w-4" />
               Edit answers
             </Button>
+            <Link href="/recovery?tab=skills">
+              <Button variant="ghost">
+                View in Skills Library
+              </Button>
+            </Link>
             <Button variant="ghost" onClick={onRestart}>
               <ListRestart className="h-4 w-4" />
               Restart

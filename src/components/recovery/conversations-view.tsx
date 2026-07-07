@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { MessageSquare, Sparkles, Trash2, UploadCloud, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConversationCard } from "@/components/conversations/conversation-card";
-import { ConversationViewDialog } from "@/components/conversations/conversation-view-dialog";
 import { ImportCapsuleDialog } from "@/components/conversations/import-capsule-dialog";
 import type { Conversation, ConversationCapsule } from "@/types/conversation";
 
@@ -13,18 +12,26 @@ interface ConversationsViewProps {
   conversations: Conversation[];
   onImport: (capsule: ConversationCapsule) => Promise<{ added: number; skipped: number }>;
   onDelete: (id: string) => void;
-  /** Bulk delete — every dependent feature (Timeline, Knowledge Graph,
+  /** Bulk delete -- every dependent feature (Timeline, Knowledge Graph,
    * Capsules) downgrades to match once these ids disappear from here. */
   onDeleteMany?: (ids: string[]) => void;
   onGenerateInsights: (id: string) => Promise<{ ok: boolean; error?: string }>;
   /** Present only when this conversation has also synced into the recovery
-   * store — builds a Capsule from it and opens the copy/download dialog. */
+   * store -- builds a Capsule from it and opens the copy/download dialog. */
   onContinue?: (id: string) => void;
+  /** AI-processed Markdown handoff for pasting into a different LLM. */
+  onShare?: (
+    id: string
+  ) => Promise<{ ok: boolean; markdown?: string; title?: string; usedAI?: boolean; error?: string }>;
+  /** Selects this conversation and switches to the Workspace tab, where the
+   * full transcript renders -- this ID is reused as-is by the recovery
+   * store's synced copy of this same conversation, so it resolves directly. */
+  onSelect: (id: string) => void;
 }
 
 /**
  * The same "raw captures" view as the standalone /conversations page, folded
- * in as a Dashboard tab — this is the extension's direct output (one card
+ * in as a Dashboard tab -- this is the extension's direct output (one card
  * per capture, colored by provider) rather than the Workspace tab's
  * pipeline-enriched view (projects, tags, similarity links).
  */
@@ -35,8 +42,9 @@ export function ConversationsView({
   onDeleteMany,
   onGenerateInsights,
   onContinue,
+  onShare,
+  onSelect,
 }: ConversationsViewProps) {
-  const [viewing, setViewing] = useState<Conversation | null>(null);
   const [importing, setImporting] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -81,7 +89,7 @@ export function ConversationsView({
           </div>
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">Captured conversations</h2>
           <p className="mt-2 max-w-[520px] text-small text-[var(--text-secondary)]">
-            Raw captures from the Noetis browser extension — these are the
+            Raw captures from the Noetis browser extension -- these are the
             same conversations that feed the Workspace, Timeline, and
             Knowledge Graph tabs.
           </p>
@@ -96,7 +104,7 @@ export function ConversationsView({
             <Sparkles className="h-6 w-6 text-[var(--text-secondary)]" />
             <p className="text-body text-[var(--text-secondary)]">
               Nothing captured yet. Capture a conversation with the extension
-              — it&apos;ll show up here automatically.
+              -- it&apos;ll show up here automatically.
             </p>
           </div>
         ) : (
@@ -141,9 +149,10 @@ export function ConversationsView({
                   <ConversationCard
                     key={conversation.id}
                     conversation={conversation}
-                    onView={() => setViewing(conversation)}
+                    onView={() => onSelect(conversation.id)}
                     onGenerateInsights={onGenerateInsights}
                     onContinue={onContinue}
+                    onShare={onShare}
                     selectable={selectMode}
                     selected={selectedIds.has(conversation.id)}
                     onToggleSelect={() => toggleSelected(conversation.id)}
@@ -161,7 +170,6 @@ export function ConversationsView({
       </div>
 
       <AnimatePresence>
-        {viewing && <ConversationViewDialog conversation={viewing} onClose={() => setViewing(null)} />}
         {importing && <ImportCapsuleDialog onImport={onImport} onClose={() => setImporting(false)} />}
       </AnimatePresence>
     </div>

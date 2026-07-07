@@ -29,7 +29,7 @@ export function useConversations() {
       const data = await res.json();
       setConversations(data.conversations ?? []);
     } catch {
-      // Server not reachable (e.g. offline) — keep showing whatever we last had.
+      // Server not reachable (e.g. offline) -- keep showing whatever we last had.
     }
   }, []);
 
@@ -87,6 +87,29 @@ export function useConversations() {
     [fetchConversations]
   );
 
+  /** Distills a conversation into a Markdown "handoff" brief (see
+   * generateHandoffMarkdown on the server) meant to be pasted into a
+   * different LLM to continue the conversation there. Unlike
+   * generateInsights, this doesn't mutate the stored conversation -- it just
+   * returns the markdown for the caller to show/copy/download. */
+  const getHandoff = useCallback(
+    async (id: string): Promise<{ ok: boolean; markdown?: string; title?: string; usedAI?: boolean; error?: string }> => {
+      try {
+        const res = await fetch("/api/conversations/handoff", {
+          method: "POST",
+          headers: accessHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ conversationId: id }),
+        });
+        const data = await res.json();
+        if (!res.ok) return { ok: false, error: data.error || "Handoff generation failed." };
+        return { ok: true, markdown: data.markdown, title: data.title, usedAI: data.usedAI };
+      } catch {
+        return { ok: false, error: "Couldn't reach the server." };
+      }
+    },
+    []
+  );
+
   const deleteConversation = useCallback(
     async (id: string) => {
       setConversations((prev) => prev.filter((c) => c.id !== id));
@@ -99,7 +122,7 @@ export function useConversations() {
     [fetchConversations]
   );
 
-  /** Bulk delete for the "select multiple, delete" flow — conversations are
+  /** Bulk delete for the "select multiple, delete" flow -- conversations are
    * the source of truth for the whole app, so every id removed here is also
    * removed from the recovery mirror by the syncCapturedConversations effect
    * that watches this hook's `conversations` output. */
@@ -119,7 +142,7 @@ export function useConversations() {
     [fetchConversations]
   );
 
-  /** Wipes every captured conversation on the server in one call — unlike
+  /** Wipes every captured conversation on the server in one call -- unlike
    * deleteConversations(ids), this reaches rows the client never loaded
    * (e.g. seed data from another import path), which is what "Reset all
    * data" needs to guarantee a true zero. */
@@ -140,6 +163,7 @@ export function useConversations() {
     deleteConversations,
     resetAll,
     generateInsights,
+    getHandoff,
     refresh: fetchConversations,
   };
 }

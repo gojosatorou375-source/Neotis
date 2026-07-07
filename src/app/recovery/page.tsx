@@ -6,22 +6,60 @@ import { Home, Plus, Trash2 } from "lucide-react";
 import { useConversations } from "@/lib/conversations/use-conversations";
 import { AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { WorkspaceTree } from "@/components/recovery/workspace-tree";
-import { ConversationDashboard } from "@/components/recovery/conversation-dashboard";
-import { RightSidebar } from "@/components/recovery/right-sidebar";
+import dynamic from "next/dynamic";
+
+const WorkspaceTree = dynamic(
+  () => import("@/components/recovery/workspace-tree").then((mod) => mod.WorkspaceTree),
+  { ssr: false, loading: () => <div className="p-4 text-small text-[var(--text-secondary)]">Loading workspace...</div> }
+);
+const ConversationDashboard = dynamic(
+  () => import("@/components/recovery/conversation-dashboard").then((mod) => mod.ConversationDashboard),
+  { ssr: false, loading: () => <div className="p-6 text-small text-[var(--text-secondary)]">Loading dashboard...</div> }
+);
+const RightSidebar = dynamic(
+  () => import("@/components/recovery/right-sidebar").then((mod) => mod.RightSidebar),
+  { ssr: false, loading: () => <div className="p-4 text-small text-[var(--text-secondary)]">Loading details...</div> }
+);
+const TimelineView = dynamic(
+  () => import("@/components/recovery/timeline-view").then((mod) => mod.TimelineView),
+  { ssr: false, loading: () => <div className="p-6 text-small text-[var(--text-secondary)]">Loading timeline...</div> }
+);
+const KnowledgeGraphView = dynamic(
+  () => import("@/components/recovery/knowledge-graph-view").then((mod) => mod.KnowledgeGraphView),
+  { ssr: false, loading: () => <div className="p-6 text-small text-[var(--text-secondary)]">Loading knowledge graph...</div> }
+);
+const KnowledgeView = dynamic(
+  () => import("@/components/recovery/knowledge-view").then((mod) => mod.KnowledgeView),
+  { ssr: false, loading: () => <div className="p-6 text-small text-[var(--text-secondary)]">Loading knowledge...</div> }
+);
+const SkillsView = dynamic(
+  () => import("@/components/recovery/skills-view").then((mod) => mod.SkillsView),
+  { ssr: false, loading: () => <div className="p-6 text-small text-[var(--text-secondary)]">Loading skills library...</div> }
+);
+const ConversationsView = dynamic(
+  () => import("@/components/recovery/conversations-view").then((mod) => mod.ConversationsView),
+  { ssr: false, loading: () => <div className="p-6 text-small text-[var(--text-secondary)]">Loading conversations...</div> }
+);
+const ImportDialog = dynamic(
+  () => import("@/components/recovery/import-dialog").then((mod) => mod.ImportDialog),
+  { ssr: false }
+);
+const DuplicatePopup = dynamic(
+  () => import("@/components/recovery/duplicate-popup").then((mod) => mod.DuplicatePopup),
+  { ssr: false }
+);
+const CapsuleViewDialog = dynamic(
+  () => import("@/components/recovery/capsule-view-dialog").then((mod) => mod.CapsuleViewDialog),
+  { ssr: false }
+);
+import { Button } from "@/components/ui/button";
 import { FindWhatIForgot } from "@/components/recovery/find-what-i-forgot";
 import { ProductivityDashboard } from "@/components/recovery/productivity-dashboard";
-import { ImportDialog } from "@/components/recovery/import-dialog";
-import { DuplicatePopup } from "@/components/recovery/duplicate-popup";
 import { TabBar, type RecoveryTab } from "@/components/recovery/tab-bar";
-import { TimelineView } from "@/components/recovery/timeline-view";
-import { KnowledgeGraphView } from "@/components/recovery/knowledge-graph-view";
-import { CapsulesView } from "@/components/recovery/capsules-view";
-import { ConversationsView } from "@/components/recovery/conversations-view";
-import { CapsuleViewDialog } from "@/components/recovery/capsule-view-dialog";
-import { Button } from "@/components/ui/button";
 import { useRecoveryStore } from "@/lib/recovery/use-recovery-store";
 import { useCapsules } from "@/lib/recovery/use-capsules";
+import { useSkills } from "@/lib/skills/use-skills";
+import { useKnowledge } from "@/lib/knowledge/use-knowledge";
 import { buildKnowledgeGraph } from "@/lib/recovery/knowledge-graph";
 import { emptyStats } from "@/lib/recovery/storage";
 import type { Capsule } from "@/types/atlas";
@@ -51,11 +89,40 @@ export default function RecoveryPage() {
 
   const {
     hydrated: capsulesHydrated,
-    capsules,
     createCapsule,
-    deleteCapsule,
     resetAll: resetCapsuleData,
   } = useCapsules();
+
+  // Skills -- the Dashboard's former "Capsules" tab now shows these instead:
+  // permanent, project-level knowledge from the Adaptive Project Interview,
+  // not conversation-derived snapshots. Unlike stats/capsules above, Skills
+  // are user-authored and independent of captured conversations, so they are
+  // NOT zeroed out by the hasConversations gate below.
+  const {
+    hydrated: skillsHydrated,
+    skills,
+    error: skillsError,
+    renameSkill,
+    setSkillTags,
+    toggleFavorite,
+    togglePinned,
+    toggleArchived,
+    duplicateSkill,
+    deleteSkill,
+    restoreSkillVersion,
+  } = useSkills();
+
+  // FEATURE 1 -- AI Knowledge Extractor: structured facts pulled out of
+  // conversations (features, APIs, decisions, rules, ...) rather than raw
+  // conversation text. Extraction runs on demand from the Knowledge tab.
+  const {
+    hydrated: knowledgeHydrated,
+    items: knowledgeItems,
+    extractFromConversation,
+    deleteItem: deleteKnowledgeItem,
+    clearForConversation: clearKnowledgeForConversation,
+    resetAll: resetKnowledgeData,
+  } = useKnowledge();
 
   // Conversations captured by the PersonaMD browser extension (a separate
   // store, server-backed via /api/conversations) get folded into this
@@ -67,33 +134,74 @@ export default function RecoveryPage() {
     deleteConversations: deleteCapturedMany,
     resetAll: resetCapturedData,
     generateInsights: generateCapturedInsights,
+    getHandoff,
   } = useConversations();
   useEffect(() => {
-    // Runs on every change to `captured` — including it shrinking to zero —
+    // Runs on every change to `captured` -- including it shrinking to zero --
     // so deletions (single or bulk) cascade into the recovery mirror and
-    // every dependent tab (Timeline, Graph, Capsules) downgrades in step.
+    // every conversation-derived tab (Timeline, Graph) downgrades in step.
     syncCapturedConversations(captured);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [captured]);
 
+  useEffect(() => {
+    // Knowledge items cascade with their source conversation, same principle
+    // as the recovery mirror above: if a conversation disappears, whatever
+    // was extracted from it should disappear too rather than going stale.
+    const validIds = new Set(conversations.map((c) => c.id));
+    const orphanedConversationIds = new Set(
+      knowledgeItems.filter((item) => !validIds.has(item.conversationId)).map((item) => item.conversationId)
+    );
+    for (const conversationId of orphanedConversationIds) {
+      clearKnowledgeForConversation(conversationId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversations, knowledgeItems]);
+
+  // Auto-trigger knowledge extraction for newly imported or synced conversations
+  useEffect(() => {
+    if (!hydrated || !knowledgeHydrated) return;
+    const extractedIds = new Set(knowledgeItems.map((item) => item.conversationId));
+    for (const c of conversations) {
+      if (!extractedIds.has(c.id)) {
+        extractFromConversation(c.id, c.title, c.conversationHistory);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversations, knowledgeItems, hydrated, knowledgeHydrated]);
+
   const [importOpen, setImportOpen] = useState(false);
   const [tab, setTab] = useState<RecoveryTab>("workspace");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlTab = params.get("tab") as RecoveryTab;
+      if (
+        urlTab &&
+        ["workspace", "conversations", "knowledge", "timeline", "graph", "skills"].includes(urlTab)
+      ) {
+        setTab(urlTab);
+      }
+    }
+  }, []);
   const [continueCapsule, setContinueCapsule] = useState<Capsule | null>(null);
 
   const graph = useMemo(() => buildKnowledgeGraph(conversations), [conversations]);
 
   // Hard rule: conversations are the single source of truth for this whole
-  // dashboard. Whatever `stats`/`capsules` happen to hold in state or in
-  // Supabase, the moment there are zero conversations every dependent
-  // surface must read as zero/empty too — this is a display-level gate on
-  // top of the cascade-delete logic in useRecoveryStore, so a stray stat or
-  // an orphaned capsule left over from some other code path can never make
-  // the dashboard look non-empty when the underlying data is gone.
+  // dashboard. Whatever `stats` happens to hold in state or in Supabase, the
+  // moment there are zero conversations every conversation-derived surface
+  // must read as zero/empty too -- this is a display-level gate on top of the
+  // cascade-delete logic in useRecoveryStore, so a stray stat left over from
+  // some other code path can never make the dashboard look non-empty when
+  // the underlying data is gone. Skills are user-authored project knowledge,
+  // not derived from conversations, so they are intentionally excluded from
+  // this gate.
   const hasConversations = conversations.length > 0;
   const effectiveStats = hasConversations ? stats : emptyStats();
-  const effectiveCapsules = hasConversations ? capsules : [];
 
-  if (!hydrated || !capsulesHydrated) return null;
+  if (!hydrated || !capsulesHydrated || !skillsHydrated || !knowledgeHydrated) return null;
 
   const selectAndGoToWorkspace = (id: string) => {
     setSelectedId(id);
@@ -103,19 +211,31 @@ export default function RecoveryPage() {
   /**
    * "Continue in another LLM": a captured conversation flagged limitReached
    * has, by now, also synced into the recovery store under the same id (see
-   * syncCapturedConversations above) — so it already has a summary,
+   * syncCapturedConversations above) -- so it already has a summary,
    * decisions, code snippets, etc. from the local metadata pipeline. Build a
    * one-conversation Capsule from it and open the copy/download dialog.
    */
   const handleContinue = (conversationId: string) => {
     const enriched = conversations.find((c) => c.id === conversationId);
-    if (!enriched) return; // hasn't finished syncing into the recovery store yet — try again in a moment
+    if (!enriched) return; // hasn't finished syncing into the recovery store yet -- try again in a moment
     const capsule = createCapsule(`Continue: ${enriched.title}`, [conversationId], conversations);
     setContinueCapsule(capsule);
   };
 
+  const handleExtractKnowledge = (conversationId: string, conversationTitle: string) => {
+    const conversation = conversations.find((c) => c.id === conversationId);
+    if (!conversation) return;
+    extractFromConversation(conversationId, conversationTitle, conversation.conversationHistory);
+  };
+
+  const handleExtractAllKnowledge = () => {
+    for (const conversation of conversations) {
+      extractFromConversation(conversation.id, conversation.title, conversation.conversationHistory);
+    }
+  };
+
   /**
-   * True full reset — wipes every row behind this dashboard (captured
+   * True full reset -- wipes every row behind this dashboard (captured
    * conversations, the recovery mirror, capsules, and stats), not just what
    * the client currently has loaded. Needed because deleting conversations
    * one-by-one only ever cascades the ones the client knows about; seed
@@ -129,7 +249,7 @@ export default function RecoveryPage() {
     ) {
       return;
     }
-    await Promise.all([resetCapturedData(), resetRecoveryData(), resetCapsuleData()]);
+    await Promise.all([resetCapturedData(), resetRecoveryData(), resetCapsuleData(), resetKnowledgeData()]);
   };
 
   return (
@@ -216,6 +336,18 @@ export default function RecoveryPage() {
             onDeleteMany={deleteCapturedMany}
             onGenerateInsights={generateCapturedInsights}
             onContinue={handleContinue}
+            onShare={getHandoff}
+            onSelect={selectAndGoToWorkspace}
+          />
+        )}
+
+        {tab === "knowledge" && (
+          <KnowledgeView
+            conversations={conversations}
+            items={knowledgeItems}
+            onExtract={handleExtractKnowledge}
+            onExtractAll={handleExtractAllKnowledge}
+            onDeleteItem={deleteKnowledgeItem}
           />
         )}
 
@@ -231,12 +363,18 @@ export default function RecoveryPage() {
           />
         )}
 
-        {tab === "capsules" && (
-          <CapsulesView
-            conversations={conversations}
-            capsules={effectiveCapsules}
-            onCreateCapsule={(name, ids) => createCapsule(name, ids, conversations)}
-            onDeleteCapsule={deleteCapsule}
+        {tab === "skills" && (
+          <SkillsView
+            skills={skills}
+            error={skillsError}
+            onRenameSkill={renameSkill}
+            onSetSkillTags={setSkillTags}
+            onToggleFavorite={toggleFavorite}
+            onTogglePinned={togglePinned}
+            onToggleArchived={toggleArchived}
+            onDuplicateSkill={duplicateSkill}
+            onDeleteSkill={deleteSkill}
+            onRestoreSkillVersion={restoreSkillVersion}
           />
         )}
       </div>

@@ -1,9 +1,9 @@
 "use client";
 
-import { Clock, GitBranch, LayoutGrid, MessageSquare, Package } from "lucide-react";
+import { Brain, Clock, GitBranch, LayoutGrid, Layers, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type RecoveryTab = "workspace" | "conversations" | "timeline" | "graph" | "capsules";
+export type RecoveryTab = "workspace" | "conversations" | "knowledge" | "timeline" | "graph" | "skills";
 
 interface TabBarProps {
   active: RecoveryTab;
@@ -13,9 +13,10 @@ interface TabBarProps {
 const TABS: { key: RecoveryTab; label: string; icon: typeof LayoutGrid }[] = [
   { key: "workspace", label: "Workspace", icon: LayoutGrid },
   { key: "conversations", label: "Conversations", icon: MessageSquare },
+  { key: "knowledge", label: "Knowledge", icon: Brain },
   { key: "timeline", label: "Timeline", icon: Clock },
   { key: "graph", label: "Knowledge Graph", icon: GitBranch },
-  { key: "capsules", label: "Capsules", icon: Package },
+  { key: "skills", label: "Skills", icon: Layers },
 ];
 
 export function TabBar({ active, onChange }: TabBarProps) {

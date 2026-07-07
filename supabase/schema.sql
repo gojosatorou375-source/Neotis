@@ -1,4 +1,4 @@
--- PersonaMD — Supabase schema
+-- PersonaMD -- Supabase schema
 --
 -- Run this once in your project's SQL Editor (Supabase dashboard -> SQL
 -- Editor -> New query -> paste -> Run). Safe to re-run: every statement is
@@ -6,12 +6,12 @@
 --
 -- SECURITY NOTE: PersonaMD is a single-user, local-first tool with no login
 -- system. The anon key used by the app is a NEXT_PUBLIC_ variable, which
--- means it's visible to anyone who opens dev tools on the site — that's
+-- means it's visible to anyone who opens dev tools on the site -- that's
 -- normal for Supabase, but it means a plain "allow everyone" RLS policy
 -- would let anyone who finds that key read/write every table.
 --
 -- To raise the bar against casual/automated scraping (NOT a substitute for
--- real per-user auth — see the README for that tradeoff), every policy below
+-- real per-user auth -- see the README for that tradeoff), every policy below
 -- requires a shared "access key" header that only this app's own client and
 -- browser extension send. Two steps before this works:
 --
@@ -26,12 +26,12 @@
 -- Postgres GUC. Supabase's hosted SQL Editor doesn't run with enough
 -- privilege to execute ALTER DATABASE ... SET (you'll see "permission
 -- denied to set parameter"), so the key is stored in a regular table
--- instead (app_config below) — any normal SQL Editor session can UPDATE a
+-- instead (app_config below) -- any normal SQL Editor session can UPDATE a
 -- table it owns, no special privileges required.
 
 -- ---------------------------------------------------------------------
 -- Holds the access key itself. RLS denies ALL direct access (even with the
--- anon key) — the only way to read this table is through
+-- anon key) -- the only way to read this table is through
 -- personamd_access_ok() below, which is declared SECURITY DEFINER so it
 -- runs with the privileges of the function's owner and can see this table
 -- regardless of the calling role's own policies.
@@ -104,7 +104,7 @@ drop policy if exists "requires access key" on personas;
 create policy "requires access key" on personas for all using (personamd_access_ok()) with check (personamd_access_ok());
 
 -- ---------------------------------------------------------------------
--- Recovery / Dashboard conversations (the enriched pipeline output —
+-- Recovery / Dashboard conversations (the enriched pipeline output --
 -- summary, keywords, embeddings, decisions, etc.)
 -- ---------------------------------------------------------------------
 create table if not exists recovery_conversations (
@@ -157,6 +157,55 @@ drop policy if exists "requires access key" on capsules;
 create policy "requires access key" on capsules for all using (personamd_access_ok()) with check (personamd_access_ok());
 
 -- ---------------------------------------------------------------------
+-- Skills (Skill.md -- project-level knowledge from the Adaptive Project
+-- Interview, optionally merged with a Persona's communication profile)
+-- ---------------------------------------------------------------------
+create table if not exists skills (
+  id text primary key,
+  name text not null,
+  project_name text not null default '',
+  persona_id text,
+  created_at timestamptz not null,
+  updated_at timestamptz not null,
+  answers jsonb not null default '{}',
+  markdown text not null,
+  tags jsonb not null default '[]',
+  favorite boolean not null default false,
+  pinned boolean not null default false,
+  archived boolean not null default false,
+  history jsonb not null default '[]'
+);
+
+alter table skills enable row level security;
+drop policy if exists "allow all" on skills;
+drop policy if exists "requires access key" on skills;
+create policy "requires access key" on skills for all using (personamd_access_ok()) with check (personamd_access_ok());
+
+-- ---------------------------------------------------------------------
+-- Knowledge items (FEATURE 1 -- AI Knowledge Extractor). Structured facts
+-- pulled out of conversations -- never the raw conversation text itself.
+-- ---------------------------------------------------------------------
+create table if not exists knowledge_items (
+  id text primary key,
+  conversation_id text not null,
+  conversation_title text not null default '',
+  category text not null,
+  title text not null,
+  description text not null default '',
+  confidence numeric not null default 0,
+  source_excerpt text not null default '',
+  created_at timestamptz not null,
+  updated_at timestamptz not null
+);
+
+create index if not exists knowledge_items_conversation_id_idx on knowledge_items (conversation_id);
+
+alter table knowledge_items enable row level security;
+drop policy if exists "allow all" on knowledge_items;
+drop policy if exists "requires access key" on knowledge_items;
+create policy "requires access key" on knowledge_items for all using (personamd_access_ok()) with check (personamd_access_ok());
+
+-- ---------------------------------------------------------------------
 -- Productivity stats (singleton row, id is always 1)
 -- ---------------------------------------------------------------------
 create table if not exists productivity_stats (
@@ -183,10 +232,39 @@ on conflict (id) do nothing;
 -- placeholder below with the exact value you put in NEXT_PUBLIC_APP_ACCESS_KEY
 -- and run this statement by itself (it's outside the "safe to re-run
 -- blindly" table setup above, since it contains your secret value). This is
--- a plain UPDATE — no elevated privileges needed, unlike the old ALTER
+-- a plain UPDATE -- no elevated privileges needed, unlike the old ALTER
 -- DATABASE approach.
 -- ---------------------------------------------------------------------
 -- update app_config set access_key = 'REPLACE_WITH_YOUR_NEXT_PUBLIC_APP_ACCESS_KEY' where id = 1;
 
 -- Verify it took effect:
 -- select access_key from app_config where id = 1;
+
+-- ---------------------------------------------------------------------
+-- Memory facts (FEATURE 1 Extended - Stage 0 Dynamic Memory Engine)
+-- ---------------------------------------------------------------------
+create table if not exists memory_facts (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id text not null references conversations(id) on delete cascade,
+  project_id text references skills(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade,
+  section text not null,
+  fact_type text not null,
+  polarity text not null default 'adopted',
+  content text not null,
+  confidence numeric not null,
+  reference_count int not null default 1,
+  superseded_by uuid references memory_facts(id) on delete set null,
+  embedding jsonb not null default '[]', -- JSONB instead of pgvector vector(1536) for Stage 0 compatibility
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  last_confirmed_at timestamptz not null default now()
+);
+
+create index if not exists memory_facts_project_id_section_idx on memory_facts (project_id, section) where superseded_by is null;
+create index if not exists memory_facts_user_id_section_idx on memory_facts (user_id, section) where superseded_by is null;
+
+alter table memory_facts enable row level security;
+drop policy if exists "requires access key" on memory_facts;
+create policy "requires access key" on memory_facts for all using (personamd_access_ok()) with check (personamd_access_ok());
+

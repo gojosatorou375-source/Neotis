@@ -53,6 +53,17 @@ export async function fetchPersonas(): Promise<Persona[]> {
   return ((data ?? []) as PersonaRow[]).map(fromRow);
 }
 
+export async function fetchPersona(id: string): Promise<Persona | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("personas")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(`Failed to load persona: ${error.message}`);
+  return data ? fromRow(data as PersonaRow) : null;
+}
+
 export async function insertPersona(persona: Persona): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase.from("personas").insert(toRow(persona));

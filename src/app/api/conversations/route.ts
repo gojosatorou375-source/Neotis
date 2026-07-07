@@ -6,46 +6,65 @@ import {
   deleteAllConversations,
 } from "@/lib/server/conversation-store";
 import { extractInsights } from "@/lib/llm/openrouter";
-import { checkAccessKey } from "@/lib/server/access-key";
+import { checkCorsOrigin, applyCorsHeaders, checkAuth } from "@/lib/server/auth";
 import type { Conversation } from "@/types/conversation";
 
-// Lets the browser extension (running as a separate origin) push captures
-// straight into this dev server, and lets the app poll for new ones.
-function withCors(response: NextResponse): NextResponse {
-  response.headers.set("Access-Control-Allow-Origin", "*");
-  response.headers.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-  response.headers.set("Access-Control-Allow-Headers", "Content-Type, X-PersonaMD-Access");
+export async function OPTIONS(req: NextRequest) {
+  const corsCheck = checkCorsOrigin(req);
+  const response = NextResponse.json(null, { status: 204 });
+  if (corsCheck.allowed) {
+    applyCorsHeaders(response, corsCheck.origin);
+  }
   return response;
 }
 
-export async function OPTIONS() {
-  return withCors(new NextResponse(null, { status: 204 }));
-}
-
 export async function GET(req: NextRequest) {
-  const denied = checkAccessKey(req);
-  if (denied) return withCors(denied);
+  const corsCheck = checkCorsOrigin(req);
+  if (!corsCheck.allowed) {
+    return NextResponse.json({ error: "CORS origin not allowed" }, { status: 403 });
+  }
+
+  const denied = await checkAuth(req);
+  if (denied) {
+    applyCorsHeaders(denied, corsCheck.origin);
+    return denied;
+  }
 
   const conversations = await readConversations();
-  return withCors(NextResponse.json({ conversations }));
+  const response = NextResponse.json({ conversations });
+  applyCorsHeaders(response, corsCheck.origin);
+  return response;
 }
 
 export async function POST(req: NextRequest) {
-  const denied = checkAccessKey(req);
-  if (denied) return withCors(denied);
+  const corsCheck = checkCorsOrigin(req);
+  if (!corsCheck.allowed) {
+    return NextResponse.json({ error: "CORS origin not allowed" }, { status: 403 });
+  }
+
+  const denied = await checkAuth(req);
+  if (denied) {
+    applyCorsHeaders(denied, corsCheck.origin);
+    return denied;
+  }
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return withCors(NextResponse.json({ error: "Invalid JSON body." }, { status: 400 }));
+    const response = NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+    applyCorsHeaders(response, corsCheck.origin);
+    return response;
   }
 
   const incoming = body as Partial<Conversation>;
   if (!incoming.id || !incoming.provider || !Array.isArray(incoming.messages)) {
-    return withCors(
-      NextResponse.json({ error: "Missing required fields: id, provider, messages." }, { status: 400 })
+    const response = NextResponse.json(
+      { error: "Missing required fields: id, provider, messages." },
+      { status: 400 }
     );
+    applyCorsHeaders(response, corsCheck.origin);
+    return response;
   }
 
   const conversation: Conversation = {
@@ -83,7 +102,9 @@ export async function POST(req: NextRequest) {
       .catch((err) => console.error("Background insight extraction failed:", err));
   }
 
-  return withCors(NextResponse.json({ conversation: stored, isNew }));
+  const response = NextResponse.json({ conversation: stored, isNew });
+  applyCorsHeaders(response, corsCheck.origin);
+  return response;
 }
 
 /** Wipes every captured conversation. Used by the Dashboard's "Reset all
@@ -91,9 +112,19 @@ export async function POST(req: NextRequest) {
  * app, this is the one call that needs to actually reach every row, not
  * just the ones currently loaded on some client. */
 export async function DELETE(req: NextRequest) {
-  const denied = checkAccessKey(req);
-  if (denied) return withCors(denied);
+  const corsCheck = checkCorsOrigin(req);
+  if (!corsCheck.allowed) {
+    return NextResponse.json({ error: "CORS origin not allowed" }, { status: 403 });
+  }
+
+  const denied = await checkAuth(req);
+  if (denied) {
+    applyCorsHeaders(denied, corsCheck.origin);
+    return denied;
+  }
 
   await deleteAllConversations();
-  return withCors(NextResponse.json({ ok: true }));
+  const response = NextResponse.json({ ok: true });
+  applyCorsHeaders(response, corsCheck.origin);
+  return response;
 }
