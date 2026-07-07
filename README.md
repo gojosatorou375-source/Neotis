@@ -17,6 +17,27 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+## Vercel Deployment Guide
+
+1. **Sign up / Log in** to Vercel (https://vercel.com)
+2. **Connect your GitHub account** to Vercel
+3. **Import the repository** https://github.com/tharun-creator/Noetis
+4. **Configure environment variables** in Vercel dashboard:
+   - `OPENROUTER_API_KEY` (optional, for AI document enhancement)
+   - `NEXT_PUBLIC_SUPABASE_URL` (from Supabase project settings)
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (from Supabase project settings)
+   - `APP_SECRET_KEY` (generate a random string for server-side access key validation)
+   - `JWT_SECRET_KEY` (generate a random string for signing session tokens)
+5. **Deploy!** Click "Deploy" button in Vercel dashboard
+
+### Local Dev Environment Setup
+
+Copy `.env.local.example` to `.env.local` and fill in the values:
+
+```bash
+cp .env.local.example .env.local
+```
+
 ## How it works
 
 - `src/lib/questions.ts` — the 10 interview questions.
