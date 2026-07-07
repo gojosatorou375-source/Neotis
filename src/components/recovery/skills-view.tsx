@@ -312,7 +312,7 @@ export function SkillsView({
               <div className="space-y-2">
                 <h3 className="text-body font-semibold text-[var(--text-primary)]">Project Profile</h3>
                 <p className="text-small text-[var(--text-secondary)] leading-relaxed">
-                  Document your project's stack, architecture, conventions, and key decisions.
+                  Document your project&apos;s stack, architecture, conventions, and key decisions.
                 </p>
               </div>
             </div>

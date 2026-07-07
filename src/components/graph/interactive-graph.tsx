@@ -118,7 +118,7 @@ export function InteractiveGraph({
     };
   }, [HEIGHT]);
 
-  const nodeById = new Map(liveNodesRef.current.map((n) => [n.id, n]));
+  const nodeById = useMemo(() => new Map(liveNodesRef.current.map((n) => [n.id, n])), []);
 
   const connectedIds = useMemo(() => {
     const focus = hoveredId ?? activeId;
