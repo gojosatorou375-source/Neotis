@@ -37,10 +37,12 @@ export function CompletionScreen({
     const fetchEnhanced = async () => {
       setLoading(true);
       try {
+        const accessKey = process.env.NEXT_PUBLIC_APP_ACCESS_KEY || "";
         const res = await fetch("/api/library/enhance", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "X-PersonaMD-Access": accessKey,
           },
           body: JSON.stringify({
             answers,
