@@ -6,21 +6,22 @@ import { motion, HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-2xl font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none select-none",
+  "inline-flex items-center justify-center gap-1.5 rounded-full font-black tracking-wide uppercase transition-all duration-150 disabled:opacity-40 disabled:pointer-events-none select-none border-2 border-black active:translate-y-0 active:shadow-none hover:-translate-y-0.5",
   {
     variants: {
       variant: {
         primary:
-          "bg-[var(--accent)] text-white shadow-[0_8px_24px_rgba(0,122,255,0.3)] hover:brightness-110",
+          "bg-[#B8FF33] text-black shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:bg-[#a6eb2a]",
         ghost:
-          "bg-transparent text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5",
-        glass: "glass-panel text-[var(--text-primary)] hover:bg-white/10",
+          "bg-transparent text-black border-transparent hover:bg-black/5 dark:hover:bg-white/5 hover:translate-y-0 hover:shadow-none active:translate-y-0",
+        glass:
+          "bg-white text-black shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:bg-slate-50",
       },
       size: {
-        sm: "h-9 px-4 text-small",
-        md: "h-12 px-6 text-body",
-        lg: "h-14 px-8 text-body",
-        icon: "h-11 w-11",
+        sm: "h-9 px-4 text-[11px]",
+        md: "h-11 px-5 text-xs",
+        lg: "h-13 px-7 text-sm",
+        icon: "h-10 w-10",
       },
     },
     defaultVariants: {
@@ -39,9 +40,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <motion.button
         ref={ref}
-        whileTap={{ scale: 0.96 }}
-        whileHover={{ scale: 1.01 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        whileTap={{ scale: 0.98 }}
         className={cn(buttonVariants({ variant, size }), className)}
         {...props}
       />

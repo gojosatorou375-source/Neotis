@@ -21,6 +21,7 @@ export default function ConversationsPage() {
     deleteConversations,
     generateInsights,
     getHandoff,
+    exportConversationMarkdown,
   } = useConversations();
   const [viewing, setViewing] = useState<Conversation | null>(null);
   const [importing, setImporting] = useState(false);
@@ -150,6 +151,7 @@ export default function ConversationsPage() {
                     onView={() => setViewing(conversation)}
                     onGenerateInsights={generateInsights}
                     onShare={getHandoff}
+                    onExportMarkdown={exportConversationMarkdown}
                     selectable={selectMode}
                     selected={selectedIds.has(conversation.id)}
                     onToggleSelect={() => toggleSelected(conversation.id)}

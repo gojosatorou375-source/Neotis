@@ -114,21 +114,21 @@ export function WorkspaceTree({
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search this workspace..."
             aria-label="Search conversations"
-            className="w-full rounded-xl border border-[var(--border)] bg-white/40 py-2 pl-9 pr-3 text-small text-[var(--text-primary)] outline-none focus:border-[var(--accent)] dark:bg-white/5"
+            className="w-full rounded-xl border-2 border-black bg-white py-2 pl-9 pr-3 text-small text-black outline-none focus:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-150"
           />
         </div>
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          <SlidersHorizontal className="h-3.5 w-3.5 shrink-0 text-[var(--text-secondary)]" />
+          <SlidersHorizontal className="h-3.5 w-3.5 shrink-0 text-black" />
           {STATUS_FILTERS.map((status) => (
             <button
               key={status}
               type="button"
               onClick={() => setStatusFilter(status)}
               className={cn(
-                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-wider border border-black transition-all duration-150",
                 statusFilter === status
-                  ? "bg-[var(--accent)] text-white"
-                  : "bg-black/5 text-[var(--text-secondary)] hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+                  ? "bg-[#B8FF33] text-black shadow-[1px_1px_0px_rgba(0,0,0,1)]"
+                  : "bg-white text-black/60 hover:text-black"
               )}
             >
               {status}

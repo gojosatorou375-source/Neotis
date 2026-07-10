@@ -44,6 +44,7 @@ interface SkillsViewProps {
   onDuplicateSkill: (id: string) => void;
   onDeleteSkill: (id: string) => void;
   onRestoreSkillVersion: (id: string, versionIndex: number) => void;
+  onUpdateSkillMarkdown?: (id: string, markdown: string) => void;
 }
 
 interface UnifiedItem {
@@ -71,8 +72,9 @@ export function SkillsView({
   onDuplicateSkill,
   onDeleteSkill,
   onRestoreSkillVersion,
+  onUpdateSkillMarkdown,
 }: SkillsViewProps) {
-  const { personas, renamePersona, deletePersona } = usePersonas();
+  const { personas, renamePersona, deletePersona, updatePersonaMarkdown } = usePersonas();
   
   // UI states
   const [viewingSkill, setViewingSkill] = useState<Skill | null>(null);
@@ -249,22 +251,21 @@ export function SkillsView({
           </div>
           <div className="flex items-center gap-2">
             <div className="relative flex-1 md:w-64">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-secondary)]" />
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/60" strokeWidth={2.5} />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search library..."
-                className="w-full rounded-xl border border-[var(--border)] bg-white/40 py-2 pl-10 pr-4 text-small text-[var(--text-primary)] outline-none focus:border-[var(--accent)] dark:bg-white/5"
+                className="w-full rounded-full border-2 border-black bg-white py-2 pl-10 pr-4 text-xs font-semibold text-black placeholder-black/40 outline-none focus:ring-4 focus:ring-[#B8FF33]/30 transition-all duration-150"
               />
             </div>
             <Button
-              variant="glass"
               size="sm"
               onClick={() => {
                 const q = window.prompt("Filter tags:", "");
                 if (q !== null) setQuery(q);
               }}
-              className="h-9"
+              className="border-2 border-black bg-white text-black hover:bg-black/5 rounded-full px-4 py-2 text-xs font-black tracking-wide uppercase hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-150 active:translate-y-0 active:shadow-none"
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               Filter
@@ -284,75 +285,75 @@ export function SkillsView({
         {/* Three Action Cards */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           {/* Card 1: Personal Profile */}
-          <GlassPanel className="p-6 hover:bg-white/30 dark:hover:bg-white/10 transition-colors flex flex-col justify-between min-h-[220px]">
+          <div className="p-6 flex flex-col justify-between min-h-[240px] bg-white border-2 border-black rounded-2xl shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_rgba(0,0,0,1)] transition-all duration-200">
             <div className="space-y-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--accent)]/10 text-[var(--accent)]">
-                <User className="h-5 w-5" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#E9D5FF] text-black border-2 border-black shadow-[1px_1px_0px_rgba(0,0,0,1)]">
+                <User className="h-5 w-5" strokeWidth={2.5} />
               </div>
               <div className="space-y-2">
-                <h3 className="text-body font-semibold text-[var(--text-primary)]">Personal Profile</h3>
-                <p className="text-small text-[var(--text-secondary)] leading-relaxed">
+                <h3 className="text-base font-black uppercase tracking-wide text-black">Personal Profile</h3>
+                <p className="text-xs font-semibold text-black/60 leading-relaxed">
                   Capture your preferences, communication style, and how AI should work with you.
                 </p>
               </div>
             </div>
-            <Link href="/" className="mt-4 block">
-              <Button className="w-full bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)]/20 shadow-none border border-[var(--accent)]/20">
+            <Link href="/?new=1" className="mt-6 block">
+              <Button className="w-full border-2 border-black bg-black hover:bg-black/90 text-white rounded-full py-2.5 text-xs font-black tracking-wide uppercase hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-150 active:translate-y-0 active:shadow-none">
                 + New Personal Profile
               </Button>
             </Link>
-          </GlassPanel>
+          </div>
 
           {/* Card 2: Project Profile */}
-          <GlassPanel className="p-6 hover:bg-white/30 dark:hover:bg-white/10 transition-colors flex flex-col justify-between min-h-[220px]">
+          <div className="p-6 flex flex-col justify-between min-h-[240px] bg-white border-2 border-black rounded-2xl shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_rgba(0,0,0,1)] transition-all duration-200">
             <div className="space-y-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500 dark:text-orange-400">
-                <Briefcase className="h-5 w-5" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FED7AA] text-black border-2 border-black shadow-[1px_1px_0px_rgba(0,0,0,1)]">
+                <Briefcase className="h-5 w-5" strokeWidth={2.5} />
               </div>
               <div className="space-y-2">
-                <h3 className="text-body font-semibold text-[var(--text-primary)]">Project Profile</h3>
-                <p className="text-small text-[var(--text-secondary)] leading-relaxed">
+                <h3 className="text-base font-black uppercase tracking-wide text-black">Project Profile</h3>
+                <p className="text-xs font-semibold text-black/60 leading-relaxed">
                   Document your project&apos;s stack, architecture, conventions, and key decisions.
                 </p>
               </div>
             </div>
-            <Link href="/skills/new?mode=project" className="mt-4 block">
-              <Button className="w-full bg-orange-500/10 text-orange-600 dark:text-orange-400 hover:bg-orange-500/20 shadow-none border border-orange-500/25">
+            <Link href="/skills/new?mode=project" className="mt-6 block">
+              <Button className="w-full border-2 border-black bg-white hover:bg-[#FED7AA]/20 text-black rounded-full py-2.5 text-xs font-black tracking-wide uppercase hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-150 active:translate-y-0 active:shadow-none">
                 + New Project Profile
               </Button>
             </Link>
-          </GlassPanel>
+          </div>
 
           {/* Card 3: Combined Skill */}
-          <GlassPanel className="p-6 hover:bg-white/30 dark:hover:bg-white/10 transition-colors flex flex-col justify-between min-h-[220px]">
+          <div className="p-6 flex flex-col justify-between min-h-[240px] bg-white border-2 border-black rounded-2xl shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_rgba(0,0,0,1)] transition-all duration-200">
             <div className="space-y-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--success)]/10 text-[var(--success)]">
-                <Layers className="h-5 w-5" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#99F6E4] text-black border-2 border-black shadow-[1px_1px_0px_rgba(0,0,0,1)]">
+                <Layers className="h-5 w-5" strokeWidth={2.5} />
               </div>
               <div className="space-y-2">
-                <h3 className="text-body font-semibold text-[var(--text-primary)]">Combined Skill</h3>
-                <p className="text-small text-[var(--text-secondary)] leading-relaxed">
+                <h3 className="text-base font-black uppercase tracking-wide text-black">Combined Skill</h3>
+                <p className="text-xs font-semibold text-black/60 leading-relaxed">
                   Combine personal + project knowledge into a unified Skill.md.
                 </p>
               </div>
             </div>
-            <Link href="/skills/combine" className="mt-4 block">
-              <Button className="w-full bg-[var(--success)]/10 text-[var(--success)] hover:bg-[var(--success)]/20 shadow-none border border-[var(--success)]/20">
+            <Link href="/skills/combine" className="mt-6 block">
+              <Button className="w-full border-2 border-black bg-white hover:bg-[#99F6E4]/20 text-black rounded-full py-2.5 text-xs font-black tracking-wide uppercase hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-150 active:translate-y-0 active:shadow-none">
                 + New Combined Skill
               </Button>
             </Link>
-          </GlassPanel>
+          </div>
         </div>
 
         {/* Saved Skills Section Header */}
-        <div className="flex flex-col gap-4 border-t border-[var(--border)] pt-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 border-t-2 border-black pt-8 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/40 text-[var(--text-primary)] dark:bg-white/5">
-              <Folder className="h-5 w-5 text-[var(--accent)]" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#B8FF33] text-black border-2 border-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]">
+              <Folder className="h-5 w-5" strokeWidth={2.5} />
             </div>
             <div>
-              <h2 className="text-body font-semibold text-[var(--text-primary)]">Your Saved Skills</h2>
-              <p className="text-small text-[var(--text-secondary)]">All your profiles and skills in one place.</p>
+              <h2 className="text-lg font-black uppercase tracking-wide text-black">Your Saved Skills</h2>
+              <p className="text-xs font-semibold text-black/50">All your profiles and skills in one place.</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -361,27 +362,27 @@ export function SkillsView({
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="appearance-none rounded-xl border border-[var(--border)] bg-white/40 py-2 pl-3 pr-8 text-small font-medium text-[var(--text-primary)] outline-none focus:border-[var(--accent)] dark:bg-white/5"
+                className="appearance-none rounded-full border-2 border-black bg-white py-2 pl-4 pr-9 text-xs font-bold uppercase tracking-wider text-black outline-none focus:ring-4 focus:ring-[#B8FF33]/30 transition-all"
               >
                 <option value="recent">Recently Updated</option>
                 <option value="name">Alphabetical</option>
                 <option value="type">Category Type</option>
               </select>
-              <ArrowUpDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--text-secondary)]" />
+              <ArrowUpDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-black" strokeWidth={2.5} />
             </div>
             {/* View Mode Toggle */}
-            <div className="flex rounded-xl border border-[var(--border)] bg-white/30 p-0.5 dark:bg-white/5">
+            <div className="flex rounded-full border-2 border-black bg-white p-0.5 shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]">
               <button
                 onClick={() => setViewMode("list")}
                 aria-label="List view"
-                className={`rounded-lg p-1.5 transition-colors ${viewMode === "list" ? "bg-white text-[var(--accent)] shadow-sm dark:bg-white/10" : "text-[var(--text-secondary)]"}`}
+                className={`rounded-full p-1.5 transition-colors ${viewMode === "list" ? "bg-[#B8FF33] text-black border border-black" : "text-black/50"}`}
               >
                 <List className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setViewMode("grid")}
                 aria-label="Grid view"
-                className={`rounded-lg p-1.5 transition-colors ${viewMode === "grid" ? "bg-white text-[var(--accent)] shadow-sm dark:bg-white/10" : "text-[var(--text-secondary)]"}`}
+                className={`rounded-full p-1.5 transition-colors ${viewMode === "grid" ? "bg-[#B8FF33] text-black border border-black" : "text-black/50"}`}
               >
                 <Grid className="h-4 w-4" />
               </button>
@@ -393,82 +394,87 @@ export function SkillsView({
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <button
             onClick={() => setActiveFilter(activeFilter === "Personal" ? "all" : "Personal")}
-            className={`flex items-center justify-between rounded-xl p-4 border text-left transition-all ${
+            className={`flex items-center justify-between rounded-xl p-4 border-2 border-black text-left transition-all ${
               activeFilter === "Personal"
-                ? "bg-[var(--accent)]/10 border-[var(--accent)] shadow-sm"
-                : "border-[var(--border)] hover:bg-white/30 dark:hover:bg-white/10 bg-white/10"
+                ? "bg-[#E9D5FF] text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] translate-y-0.5"
+                : "bg-white hover:bg-black/[0.02] text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5"
             }`}
           >
             <div className="flex items-center gap-3">
-              <User className="h-5 w-5 text-[var(--accent)]" />
+              <User className="h-5 w-5 text-black" strokeWidth={2.5} />
               <div>
-                <p className="text-small font-semibold text-[var(--text-primary)]">Personal</p>
-                <p className="text-[11px] text-[var(--text-secondary)]">{stats.personal} items</p>
+                <p className="text-xs font-black uppercase tracking-wider text-black">Personal</p>
+                <p className="text-[10px] font-bold text-black/50">{stats.personal} items</p>
               </div>
             </div>
-            <ChevronRight className="h-4 w-4 text-[var(--text-secondary)]" />
+            <ChevronRight className="h-4 w-4 text-black" strokeWidth={2.5} />
           </button>
 
           <button
             onClick={() => setActiveFilter(activeFilter === "Project" ? "all" : "Project")}
-            className={`flex items-center justify-between rounded-xl p-4 border text-left transition-all ${
+            className={`flex items-center justify-between rounded-xl p-4 border-2 border-black text-left transition-all ${
               activeFilter === "Project"
-                ? "bg-orange-500/10 border-orange-500 shadow-sm"
-                : "border-[var(--border)] hover:bg-white/30 dark:hover:bg-white/10 bg-white/10"
+                ? "bg-[#FED7AA] text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] translate-y-0.5"
+                : "bg-white hover:bg-black/[0.02] text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5"
             }`}
           >
             <div className="flex items-center gap-3">
-              <Briefcase className="h-5 w-5 text-orange-500 dark:text-orange-400" />
+              <Briefcase className="h-5 w-5 text-black" strokeWidth={2.5} />
               <div>
-                <p className="text-small font-semibold text-[var(--text-primary)]">Project</p>
-                <p className="text-[11px] text-[var(--text-secondary)]">{stats.project} items</p>
+                <p className="text-xs font-black uppercase tracking-wider text-black">Project</p>
+                <p className="text-[10px] font-bold text-black/50">{stats.project} items</p>
               </div>
             </div>
-            <ChevronRight className="h-4 w-4 text-[var(--text-secondary)]" />
+            <ChevronRight className="h-4 w-4 text-black" strokeWidth={2.5} />
           </button>
 
           <button
             onClick={() => setActiveFilter(activeFilter === "Combined" ? "all" : "Combined")}
-            className={`flex items-center justify-between rounded-xl p-4 border text-left transition-all ${
+            className={`flex items-center justify-between rounded-xl p-4 border-2 border-black text-left transition-all ${
               activeFilter === "Combined"
-                ? "bg-[var(--success)]/10 border-[var(--success)] shadow-sm"
-                : "border-[var(--border)] hover:bg-white/30 dark:hover:bg-white/10 bg-white/10"
+                ? "bg-[#99F6E4] text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] translate-y-0.5"
+                : "bg-white hover:bg-black/[0.02] text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5"
             }`}
           >
             <div className="flex items-center gap-3">
-              <Layers className="h-5 w-5 text-[var(--success)]" />
+              <Layers className="h-5 w-5 text-black" strokeWidth={2.5} />
               <div>
-                <p className="text-small font-semibold text-[var(--text-primary)]">Combined</p>
-                <p className="text-[11px] text-[var(--text-secondary)]">{stats.combined} items</p>
+                <p className="text-xs font-black uppercase tracking-wider text-black">Combined</p>
+                <p className="text-[10px] font-bold text-black/50">{stats.combined} items</p>
               </div>
             </div>
-            <ChevronRight className="h-4 w-4 text-[var(--text-secondary)]" />
+            <ChevronRight className="h-4 w-4 text-black" strokeWidth={2.5} />
           </button>
 
           <button
             onClick={() => setActiveFilter(activeFilter === "favorites" ? "all" : "favorites")}
-            className={`flex items-center justify-between rounded-xl p-4 border text-left transition-all ${
+            className={`flex items-center justify-between rounded-xl p-4 border-2 border-black text-left transition-all ${
               activeFilter === "favorites"
-                ? "bg-yellow-500/10 border-yellow-500 shadow-sm"
-                : "border-[var(--border)] hover:bg-white/30 dark:hover:bg-white/10 bg-white/10"
+                ? "bg-yellow-100 text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] translate-y-0.5"
+                : "bg-white hover:bg-black/[0.02] text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5"
             }`}
           >
             <div className="flex items-center gap-3">
-              <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+              <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" strokeWidth={2.5} />
               <div>
-                <p className="text-small font-semibold text-[var(--text-primary)]">Favorites</p>
-                <p className="text-[11px] text-[var(--text-secondary)]">{stats.favorites} items</p>
+                <p className="text-xs font-black uppercase tracking-wider text-black">Favorites</p>
+                <p className="text-[10px] font-bold text-black/50">{stats.favorites} items</p>
               </div>
             </div>
-            <ChevronRight className="h-4 w-4 text-[var(--text-secondary)]" />
+            <ChevronRight className="h-4 w-4 text-black" strokeWidth={2.5} />
           </button>
         </div>
 
         {/* Content View: List (Table) vs Grid */}
         <AnimatePresence mode="wait">
           {processedItems.length === 0 ? (
-            <div className="rounded-2xl border border-[var(--border)] bg-white/10 p-12 text-center text-body text-[var(--text-secondary)]">
-              No matching profiles or skills found in your library.
+            <div className="rounded-2xl border-2 border-black bg-white p-12 text-center shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+              <svg className="mx-auto h-16 w-16 mb-4 text-black/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A9 9 0 0112 3v0a9 9 0 019 9v.75m-.501 5.495l-2.122-2.122m0 0a3.918 3.918 0 000-5.537m0 5.537a3.918 3.918 0 010-5.537M7.5 12h9" />
+              </svg>
+              <p className="text-xs font-black uppercase tracking-widest text-black/50">
+                No matching profiles or skills found in your library.
+              </p>
             </div>
           ) : viewMode === "list" ? (
             <motion.div
@@ -476,7 +482,7 @@ export function SkillsView({
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white/15 dark:bg-white/5"
+              className="overflow-x-auto rounded-2xl border-2 border-black bg-white shadow-[4px_4px_0px_rgba(0,0,0,1)]"
             >
               <table className="w-full border-collapse text-left">
                 <thead>
@@ -694,50 +700,58 @@ export function SkillsView({
               className="grid grid-cols-1 gap-5 sm:grid-cols-2"
             >
               {processedItems.map((item) => (
-                <GlassPanel key={item.id} className="relative flex flex-col justify-between p-6">
+                <div key={item.id} className="relative flex flex-col justify-between p-6 bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_rgba(0,0,0,1)] transition-all duration-200">
                   <div>
-                    <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="mb-3 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 truncate">
-                        <FileCode className="h-4 w-4 text-[var(--text-secondary)]" />
-                        <h3 className="truncate text-body font-semibold text-[var(--text-primary)]">{item.name}</h3>
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center border-2 border-black ${
+                          item.type === "Personal"
+                            ? "bg-[#E9D5FF]"
+                            : item.type === "Project"
+                              ? "bg-[#FED7AA]"
+                              : "bg-[#99F6E4]"
+                        } shadow-[1px_1px_0px_rgba(0,0,0,1)]`}>
+                          <FileCode className="h-3.5 w-3.5 text-black" strokeWidth={2.5} />
+                        </div>
+                        <h3 className="truncate text-sm font-black uppercase tracking-wide text-black">{item.name}</h3>
                       </div>
                       <span
-                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
+                        className={`rounded-full border-2 border-black px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-black shadow-[1px_1px_0px_rgba(0,0,0,1)] ${
                           item.type === "Personal"
-                            ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+                            ? "bg-[#E9D5FF]"
                             : item.type === "Project"
-                              ? "bg-orange-500/10 text-orange-600 dark:text-orange-400"
-                              : "bg-[var(--success)]/10 text-[var(--success)]"
+                              ? "bg-[#FED7AA]"
+                              : "bg-[#99F6E4]"
                         }`}
                       >
                         {item.type}
                       </span>
                     </div>
                     {item.projectName && (
-                      <p className="mb-2 text-[11px] font-medium text-[var(--accent)]">{item.projectName}</p>
+                      <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-[#B8FF33] bg-black px-2 py-0.5 rounded border border-black inline-block">{item.projectName}</p>
                     )}
-                    <p className="mb-3 text-[11px] text-[var(--text-secondary)]">
+                    <p className="mb-3 text-[11px] font-bold text-black/40">
                       Updated {getRelativeTime(item.updatedAt)} • {item.markdown ? `${(item.markdown.length / 1024).toFixed(1)} KB` : "0.0 KB"}
                     </p>
-                    <p className="mb-6 line-clamp-3 text-small text-[var(--text-secondary)]">
+                    <p className="mb-6 line-clamp-3 text-xs font-semibold text-black/60 leading-relaxed">
                       {item.markdown ? item.markdown.slice(0, 150) + "..." : "No preview available"}
                     </p>
                   </div>
-                  <div className="flex items-center justify-between border-t border-[var(--border)] pt-4">
+                  <div className="flex items-center justify-between border-t-2 border-black pt-4">
                     <div className="flex items-center gap-1">
                       {item.type !== "Personal" && (
                         <>
                           <button
                             onClick={() => onTogglePinned(item.id)}
-                            className="rounded-full p-1.5 text-[var(--text-secondary)] hover:bg-black/5 dark:hover:bg-white/5"
+                            className="rounded-full border border-black p-1.5 text-black hover:bg-black/5 bg-white shadow-[1px_1px_0px_rgba(0,0,0,1)]"
                           >
-                            <Pin className={`h-4 w-4 ${item.pinned ? "fill-[var(--accent)] text-[var(--accent)]" : ""}`} />
+                            <Pin className={`h-3.5 w-3.5 ${item.pinned ? "fill-black text-black" : "text-black/50"}`} />
                           </button>
                           <button
                             onClick={() => onToggleFavorite(item.id)}
-                            className="rounded-full p-1.5 text-[var(--text-secondary)] hover:bg-black/5 dark:hover:bg-white/5"
+                            className="rounded-full border border-black p-1.5 text-black hover:bg-black/5 bg-white shadow-[1px_1px_0px_rgba(0,0,0,1)]"
                           >
-                            <Star className={`h-4 w-4 ${item.favorite ? "fill-yellow-500 text-yellow-500" : ""}`} />
+                            <Star className={`h-3.5 w-3.5 ${item.favorite ? "fill-yellow-400 text-black" : "text-black/50"}`} />
                           </button>
                         </>
                       )}
@@ -745,7 +759,7 @@ export function SkillsView({
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
-                        variant="glass"
+                        className="border-2 border-black bg-white hover:bg-black/5 text-black rounded-full px-3 py-1 text-xs font-black tracking-wide uppercase shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]"
                         onClick={() => {
                           if (item.type === "Personal") setViewingPersona(item.original);
                           else setViewingSkill(item.original);
@@ -755,21 +769,21 @@ export function SkillsView({
                       </Button>
                       <Button
                         size="sm"
-                        variant="ghost"
+                        className="border-2 border-black bg-white hover:bg-black/5 text-black rounded-full px-3 py-1 text-xs font-black tracking-wide uppercase shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]"
                         onClick={() => handleRename(item)}
                       >
                         Rename
                       </Button>
                       <Button
                         size="sm"
-                        className="bg-red-500/10 text-red-500 hover:bg-red-500/20"
+                        className="border-2 border-black bg-red-50 hover:bg-red-100 text-red-700 rounded-full px-3 py-1 text-xs font-black tracking-wide uppercase shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]"
                         onClick={() => handleDelete(item)}
                       >
                         Delete
                       </Button>
                     </div>
                   </div>
-                </GlassPanel>
+                </div>
               ))}
             </motion.div>
           )}
@@ -795,6 +809,12 @@ export function SkillsView({
               onRestoreSkillVersion(viewingSkill.id, versionIndex);
               setViewingSkill(null);
             }}
+            onSaveMarkdown={(markdown) => {
+              if (onUpdateSkillMarkdown) {
+                onUpdateSkillMarkdown(viewingSkill.id, markdown);
+                setViewingSkill((prev) => prev ? { ...prev, markdown } : null);
+              }
+            }}
           />
         )}
         {viewingPersona && (
@@ -816,6 +836,10 @@ export function SkillsView({
             }}
             onClose={() => setViewingPersona(null)}
             onRestoreVersion={() => {}}
+            onSaveMarkdown={(markdown) => {
+              updatePersonaMarkdown(viewingPersona.id, markdown);
+              setViewingPersona((prev: any) => prev ? { ...prev, markdown } : null);
+            }}
           />
         )}
       </AnimatePresence>

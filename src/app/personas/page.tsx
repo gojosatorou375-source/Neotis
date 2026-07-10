@@ -21,6 +21,7 @@ export default function PersonasPage() {
     deletePersona,
     setPersonaTags,
     restorePersonaVersion,
+    updatePersonaMarkdown,
   } = usePersonas();
   const [viewing, setViewing] = useState<Persona | null>(null);
   const [query, setQuery] = useState("");
@@ -199,6 +200,10 @@ export default function PersonasPage() {
             onRestoreVersion={(versionIndex) => {
               restorePersonaVersion(viewing.id, versionIndex);
               setViewing(null);
+            }}
+            onSaveMarkdown={(markdown) => {
+              updatePersonaMarkdown(viewing.id, markdown);
+              setViewing((prev) => prev ? { ...prev, markdown } : null);
             }}
           />
         )}

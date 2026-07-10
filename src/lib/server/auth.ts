@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 // Allowed CORS origins from manifest.json
 const ALLOWED_ORIGINS = new Set([
@@ -24,9 +25,9 @@ function getJwtSecret() {
 }
 
 function getAppSecretKey() {
-  const key = process.env.APP_SECRET_KEY;
+  const key = process.env.APP_SECRET_KEY || process.env.NEXT_PUBLIC_APP_ACCESS_KEY;
   if (!key) {
-    throw new Error("APP_SECRET_KEY environment variable is not set");
+    throw new Error("Neither APP_SECRET_KEY nor NEXT_PUBLIC_APP_ACCESS_KEY environment variable is set");
   }
   return key;
 }
@@ -50,8 +51,11 @@ export async function validateSessionToken(token: string): Promise<boolean> {
 }
 
 export function validateAccessKey(key: string): boolean {
-  const expectedKey = process.env.APP_SECRET_KEY;
+  const expectedKey = process.env.APP_SECRET_KEY || process.env.NEXT_PUBLIC_APP_ACCESS_KEY;
   if (!expectedKey) {
+    if (process.env.NODE_ENV === "production") {
+      return false; // Don't allow empty secret in production
+    }
     return true; // Allow unconfigured dev environments
   }
   return key === expectedKey;
@@ -63,7 +67,7 @@ export function checkCorsOrigin(req: NextRequest): { allowed: boolean; origin?: 
     // Same-origin request
     return { allowed: true };
   }
-  if (ALLOWED_ORIGINS.has(origin)) {
+  if (ALLOWED_ORIGINS.has(origin) || origin.startsWith("chrome-extension://")) {
     return { allowed: true, origin };
   }
   return { allowed: false, origin };
@@ -73,28 +77,59 @@ export function applyCorsHeaders(response: NextResponse, origin?: string): NextR
   if (origin) {
     response.headers.set("Access-Control-Allow-Origin", origin);
     response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    response.headers.set("Access-Control-Allow-Headers", "Content-Type, X-PersonaMD-Access, X-PersonaMD-Session");
+    response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-PersonaMD-Access, X-PersonaMD-Session");
   }
   return response;
 }
 
 export async function checkAuth(req: NextRequest): Promise<NextResponse | null> {
-  const appSecretKey = process.env.APP_SECRET_KEY;
-  if (!appSecretKey) {
-    return null; // Allow unconfigured dev environments
-  }
+  const appSecretKey = process.env.APP_SECRET_KEY || process.env.NEXT_PUBLIC_APP_ACCESS_KEY;
 
-  // Check for session token first
-  const sessionToken = req.headers.get("X-PersonaMD-Session");
-  if (sessionToken && await validateSessionToken(sessionToken)) {
-    return null;
-  }
-
-  // Fall back to access key for backward compatibility (while transitioning)
+  // 1. Fall back to access key for backward compatibility or extension/dev setups
   const accessKey = req.headers.get("X-PersonaMD-Access");
   if (accessKey && validateAccessKey(accessKey)) {
     return null;
   }
 
-  return NextResponse.json({ error: "Missing or invalid authentication" }, { status: 401 });
+  // 2. Validate Supabase session token or custom app session token
+  const authHeader =
+    req.headers.get("Authorization") ||
+    req.headers.get("X-PersonaMD-Session") ||
+    req.headers.get("x-personamd-session") ||
+    "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+  if (!token) {
+    if (!appSecretKey) {
+      if (process.env.NODE_ENV === "production") {
+        return NextResponse.json({ error: "Authentication configuration missing in production" }, { status: 500 });
+      }
+      return null; // Allow unconfigured dev environments
+    }
+    return NextResponse.json({ error: "Missing authentication token" }, { status: 401 });
+  }
+
+  // Verify against Supabase Auth
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !anonKey) {
+      return NextResponse.json({ error: "Supabase configuration missing" }, { status: 500 });
+    }
+
+    const supabase = createClient(url, anonKey);
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      // Check if it's a valid local session token (e.g. from extension exchange)
+      if (await validateSessionToken(token)) {
+        return null;
+      }
+      return NextResponse.json({ error: "Invalid or expired session token" }, { status: 401 });
+    }
+
+    return null; // Authorized
+  } catch (err: any) {
+    return NextResponse.json({ error: `Auth verification failed: ${err.message}` }, { status: 500 });
+  }
 }

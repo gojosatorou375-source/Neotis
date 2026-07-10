@@ -14,7 +14,7 @@ interface SkillSetupScreenProps {
    * Project.md choice, or `?mode=project`): same 6-question interview and
    * data model as a Skill, just presented as its own standalone document
    * with no Persona attached -- so the picker below never renders and the
-   * copy doesn't mention "Skill.md" at all. */
+   * copy doesn't mention "Skill.md" at all. */ 
   projectOnly?: boolean;
 }
 

@@ -121,6 +121,24 @@ export function usePersonas() {
     [personas]
   );
 
+  const updatePersonaMarkdown = useCallback(
+    (id: string, markdown: string) => {
+      const persona = personas.find((p) => p.id === id);
+      if (!persona) return;
+      const now = new Date().toISOString();
+      const priorVersion = { answers: persona.answers, markdown: persona.markdown, savedAt: persona.updatedAt };
+      const updated: Persona = {
+        ...persona,
+        markdown,
+        updatedAt: now,
+        history: [priorVersion, ...persona.history].slice(0, MAX_HISTORY),
+      };
+      setPersonas((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      updatePersonaRow(updated).catch((err) => console.error("Failed to save persona markdown:", err));
+    },
+    [personas]
+  );
+
   const deletePersona = useCallback((id: string) => {
     setPersonas((prev) => prev.filter((p) => p.id !== id));
     deletePersonaRow(id).catch((err) => console.error("Failed to delete persona:", err));
@@ -134,5 +152,6 @@ export function usePersonas() {
     deletePersona,
     restorePersonaVersion,
     setPersonaTags,
+    updatePersonaMarkdown,
   };
 }

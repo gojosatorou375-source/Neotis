@@ -8,13 +8,13 @@
 (function () {
   const SELECTOR_STRATEGIES = [
     {
-      user: '[data-testid="user-message"]',
-      assistant: '[data-testid="assistant-message"], [data-testid="chat-message"]',
+      user: '[data-testid="user-message"], .font-user-message',
+      assistant: '[data-testid="assistant-message"], [data-testid="chat-message"], .font-claude-message, [class*="claude-message"], [class*="assistant-message"]',
     },
     {
-      // Fallback: Claude wraps each turn in a font-user-message / font-claude-message class.
-      user: ".font-user-message",
-      assistant: ".font-claude-message",
+      // Fallback strategies for custom DOM containers
+      user: ".font-user-message, div.font-user",
+      assistant: ".font-claude-message, div.font-claude, .chat-message",
     },
   ];
 
@@ -44,15 +44,32 @@
   function extractConversation() {
     let userEls = [];
     let assistantEls = [];
+    let bestUserEls = [];
+    let bestAssistantEls = [];
 
     for (const strategy of SELECTOR_STRATEGIES) {
-      userEls = Array.from(document.querySelectorAll(strategy.user));
-      assistantEls = Array.from(document.querySelectorAll(strategy.assistant));
-      if (userEls.length > 0 || assistantEls.length > 0) break;
+      const user = Array.from(document.querySelectorAll(strategy.user));
+      const assistant = Array.from(document.querySelectorAll(strategy.assistant));
+      if (user.length > 0 && assistant.length > 0) {
+        userEls = user;
+        assistantEls = assistant;
+        break;
+      }
+      if (user.length > bestUserEls.length) bestUserEls = user;
+      if (assistant.length > bestAssistantEls.length) bestAssistantEls = assistant;
     }
 
-    if (userEls.length === 0 && assistantEls.length === 0) {
-      return { ok: false, error: "No message turns found on this page. Open a conversation first." };
+    if (userEls.length === 0 || assistantEls.length === 0) {
+      userEls = bestUserEls;
+      assistantEls = bestAssistantEls;
+    }
+
+    if (userEls.length === 0 || assistantEls.length === 0) {
+      if (window.NoetisCapture) {
+        const fallback = window.NoetisCapture.genericExtract("claude");
+        if (fallback.ok) return fallback;
+      }
+      return { ok: false, error: "No complete conversation found on this page. Open a conversation first." };
     }
 
     // Merge both lists back into document order using their position in the DOM.

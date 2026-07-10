@@ -27,30 +27,32 @@ export function FindWhatIForgot({ conversations, onSelect }: FindWhatIForgotProp
   const results = useMemo(() => semanticSearch(query, conversations, 6), [query, conversations]);
 
   return (
-    <GlassPanel className="p-6">
-      <div className="mb-4 flex items-center gap-2 text-small font-semibold text-[var(--text-primary)]">
-        <Sparkles className="h-4 w-4 text-[var(--accent)]" />
+    <div className="bg-white border-2 border-black p-6 rounded-2xl shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+      <div className="mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-black/50">
+        <div className="w-5 h-5 rounded-full flex items-center justify-center bg-[#B8FF33] border-2 border-black shadow-[1px_1px_0px_rgba(0,0,0,1)]">
+          <Sparkles className="h-3 w-3 text-black" strokeWidth={3} />
+        </div>
         Find What I Forgot
       </div>
-      <div className="relative mb-3">
-        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-secondary)]" />
+      <div className="relative mb-4">
+        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/60" strokeWidth={2.5} />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Describe anything you remember..."
           aria-label="Find what I forgot"
-          className="w-full rounded-2xl border border-[var(--border)] bg-white/40 py-3 pl-11 pr-4 text-body text-[var(--text-primary)] outline-none focus:border-[var(--accent)] dark:bg-white/5"
+          className="w-full rounded-full border-2 border-black bg-white py-3 pl-11 pr-4 text-sm font-semibold text-black placeholder-black/40 outline-none focus:ring-4 focus:ring-[#B8FF33]/30 transition-all duration-150"
         />
       </div>
 
       {query.trim().length === 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2.5">
           {EXAMPLES.map((e) => (
             <button
               key={e}
               type="button"
               onClick={() => setQuery(e)}
-              className="rounded-full bg-black/5 px-3 py-1.5 text-[12px] text-[var(--text-secondary)] hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+              className="rounded-full border-2 border-black bg-[#B8FF33] px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-black hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-none transition-all duration-150"
             >
               {e}
             </button>
@@ -64,7 +66,7 @@ export function FindWhatIForgot({ conversations, onSelect }: FindWhatIForgotProp
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="mt-4 space-y-2 overflow-hidden"
+            className="mt-4 space-y-3 overflow-hidden"
           >
             {results.map(({ conversation, score }) => {
               const meta = PLATFORM_META[conversation.platform];
@@ -74,22 +76,22 @@ export function FindWhatIForgot({ conversations, onSelect }: FindWhatIForgotProp
                   key={conversation.id}
                   type="button"
                   onClick={() => onSelect(conversation.id)}
-                  className="flex w-full items-start justify-between gap-3 rounded-2xl border border-[var(--border)] bg-white/30 p-4 text-left hover:bg-white/50 dark:bg-white/5 dark:hover:bg-white/10"
+                  className="flex w-full items-start justify-between gap-4 rounded-xl border-2 border-black bg-white p-4 text-left shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_rgba(0,0,0,1)] transition-all duration-150"
                 >
                   <div className="min-w-0">
-                    <div className="mb-1 flex items-center gap-2">
+                    <div className="mb-1.5 flex items-center gap-2">
                       <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: meta.color }} />
-                      <span className="truncate text-small font-medium text-[var(--text-primary)]">
+                      <span className="truncate text-xs font-black uppercase tracking-wide text-black">
                         {conversation.title}
                       </span>
                       <StatusBadge status={conversation.status} />
                     </div>
-                    <p className="line-clamp-1 text-[12px] text-[var(--text-secondary)]">
+                    <p className="line-clamp-1 text-[11px] font-semibold text-black/60">
                       {conversation.summary}
                     </p>
                   </div>
-                  <span className="shrink-0 rounded-full bg-[var(--accent)]/15 px-2 py-1 text-[11px] font-semibold text-[var(--accent)]">
-                    {Math.round(Math.min(score, 1) * 100)}% confident
+                  <span className="shrink-0 rounded-full border-2 border-black bg-[#B8FF33] px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-black shadow-[1px_1px_0px_rgba(0,0,0,1)]">
+                    {Math.round(Math.min(score, 1) * 100)}% Confident
                   </span>
                 </button>
               );
@@ -97,11 +99,11 @@ export function FindWhatIForgot({ conversations, onSelect }: FindWhatIForgotProp
           </motion.div>
         )}
         {query.trim().length > 0 && results.length === 0 && (
-          <p className="mt-4 text-small text-[var(--text-secondary)]">
+          <p className="mt-4 text-xs font-black uppercase tracking-wider text-black/50">
             Nothing matched yet — try describing it differently.
           </p>
         )}
       </AnimatePresence>
-    </GlassPanel>
+    </div>
   );
 }

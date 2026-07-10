@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateCombinedSkill } from "@/lib/llm/combine-skill";
 import { checkCorsOrigin, applyCorsHeaders, checkAuth } from "@/lib/server/auth";
+import { getClientIp, checkRateLimit } from "@/lib/server/rate-limiter";
 
 export async function OPTIONS(req: NextRequest) {
   const corsCheck = checkCorsOrigin(req);
@@ -21,6 +22,13 @@ export async function POST(req: NextRequest) {
   if (denied) {
     applyCorsHeaders(denied, corsCheck.origin);
     return denied;
+  }
+
+  const ip = getClientIp(req);
+  if (checkRateLimit(`skills-combine-${ip}`, 5)) {
+    const response = NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+    applyCorsHeaders(response, corsCheck.origin);
+    return response;
   }
 
   let body: unknown;

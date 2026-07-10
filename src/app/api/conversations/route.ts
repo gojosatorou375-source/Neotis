@@ -7,6 +7,7 @@ import {
 } from "@/lib/server/conversation-store";
 import { extractInsights } from "@/lib/llm/openrouter";
 import { checkCorsOrigin, applyCorsHeaders, checkAuth } from "@/lib/server/auth";
+import { getClientIp, checkRateLimit } from "@/lib/server/rate-limiter";
 import type { Conversation } from "@/types/conversation";
 
 export async function OPTIONS(req: NextRequest) {
@@ -46,6 +47,13 @@ export async function POST(req: NextRequest) {
   if (denied) {
     applyCorsHeaders(denied, corsCheck.origin);
     return denied;
+  }
+
+  const ip = getClientIp(req);
+  if (checkRateLimit(`conversations-post-${ip}`, 10)) {
+    const response = NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+    applyCorsHeaders(response, corsCheck.origin);
+    return response;
   }
 
   let body: unknown;

@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkCorsOrigin, applyCorsHeaders, checkAuth } from "@/lib/server/auth";
+import { getClientIp, checkRateLimit } from "@/lib/server/rate-limiter";
 import { getSupabase } from "@/lib/supabase/client";
 import { extractMemoryFacts } from "@/lib/llm/openrouter";
 import {
   deduplicateAndSupersedeFacts,
   generateMarkdown,
 } from "@/lib/knowledge/engine";
-import type { MemoryFact, FactType, FactPolarity } from "@/types/memory";
+import type { MemoryFact } from "@/types/memory";
+import {
+  memoryFactsCollection,
+  fetchFactsForScope,
+  fetchActiveFacts,
+} from "@/lib/knowledge/memory-facts-store";
 
 /**
  * CONVERSATION DATA MODEL RECONCILIATION NOTE:
@@ -30,62 +36,7 @@ export async function OPTIONS(req: NextRequest) {
   return response;
 }
 
-interface MemoryFactRow {
-  id: string;
-  conversation_id: string;
-  project_id: string | null;
-  user_id: string | null;
-  section: string;
-  fact_type: string;
-  polarity: string;
-  content: string;
-  confidence: number;
-  reference_count: number;
-  superseded_by: string | null;
-  embedding: unknown;
-  created_at: string;
-  updated_at: string;
-  last_confirmed_at: string;
-}
-
-function fromRow(row: MemoryFactRow): MemoryFact {
-  return {
-    id: row.id,
-    conversationId: row.conversation_id,
-    projectId: row.project_id,
-    userId: row.user_id,
-    section: row.section,
-    factType: row.fact_type as FactType,
-    polarity: row.polarity as FactPolarity,
-    content: row.content,
-    confidence: Number(row.confidence),
-    referenceCount: row.reference_count,
-    supersededBy: row.superseded_by,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    lastConfirmedAt: row.last_confirmed_at,
-  };
-}
-
-function toRow(fact: MemoryFact): MemoryFactRow {
-  return {
-    id: fact.id,
-    conversation_id: fact.conversationId,
-    project_id: fact.projectId ?? null,
-    user_id: fact.userId ?? null,
-    section: fact.section,
-    fact_type: fact.factType,
-    polarity: fact.polarity,
-    content: fact.content,
-    confidence: fact.confidence,
-    reference_count: fact.referenceCount,
-    superseded_by: fact.supersededBy ?? null,
-    embedding: [],
-    created_at: fact.createdAt,
-    updated_at: fact.updatedAt,
-    last_confirmed_at: fact.lastConfirmedAt,
-  };
-}
+// MemoryFactRow interface, fromRow, and toRow are imported from memory-facts-store
 
 /**
  * POST /api/memory/extract
@@ -106,6 +57,13 @@ export async function POST(req: NextRequest) {
   if (denied) {
     applyCorsHeaders(denied, corsCheck.origin);
     return denied;
+  }
+
+  const ip = getClientIp(req);
+  if (checkRateLimit(`memory-extract-${ip}`, 5)) {
+    const response = NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+    applyCorsHeaders(response, corsCheck.origin);
+    return response;
   }
 
   let body: { conversationId?: string; projectId?: string; userId?: string };
@@ -154,23 +112,14 @@ export async function POST(req: NextRequest) {
   }
 
   // 3. Fetch existing facts for deduplication/supersession scope
-  let query = supabase.from("memory_facts").select("*");
-  if (projectId) {
-    query = query.eq("project_id", projectId);
-  } else if (userId) {
-    query = query.eq("user_id", userId);
-  } else {
-    query = query.eq("conversation_id", conversationId);
-  }
-
-  const { data: existingRows, error: existingError } = await query;
-  if (existingError) {
-    const response = NextResponse.json({ error: `Failed to fetch existing facts: ${existingError.message}` }, { status: 500 });
+  let existingFacts: MemoryFact[];
+  try {
+    existingFacts = await fetchFactsForScope({ projectId, userId, conversationId });
+  } catch (e: any) {
+    const response = NextResponse.json({ error: `Failed to fetch existing facts: ${e.message}` }, { status: 500 });
     applyCorsHeaders(response, corsCheck.origin);
     return response;
   }
-
-  const existingFacts = (existingRows || []).map((row: MemoryFactRow) => fromRow(row));
 
   // 4. Run dedup and supersession logic
   const { toInsert, toUpdate } = deduplicateAndSupersedeFacts(
@@ -182,27 +131,17 @@ export async function POST(req: NextRequest) {
   );
 
   // 5. Commit database changes
-  if (toInsert.length > 0) {
-    const { error: insertError } = await supabase
-      .from("memory_facts")
-      .insert(toInsert.map(toRow));
-    if (insertError) {
-      const response = NextResponse.json({ error: `Failed to insert new facts: ${insertError.message}` }, { status: 500 });
-      applyCorsHeaders(response, corsCheck.origin);
-      return response;
+  try {
+    if (toInsert.length > 0) {
+      await memoryFactsCollection.insertMany(toInsert);
     }
-  }
-
-  for (const updateFact of toUpdate) {
-    const { error: updateError } = await supabase
-      .from("memory_facts")
-      .update(toRow(updateFact))
-      .eq("id", updateFact.id);
-    if (updateError) {
-      const response = NextResponse.json({ error: `Failed to update facts: ${updateError.message}` }, { status: 500 });
-      applyCorsHeaders(response, corsCheck.origin);
-      return response;
+    for (const updateFact of toUpdate) {
+      await memoryFactsCollection.update(updateFact);
     }
+  } catch (e: any) {
+    const response = NextResponse.json({ error: `Failed to save facts: ${e.message}` }, { status: 500 });
+    applyCorsHeaders(response, corsCheck.origin);
+    return response;
   }
 
   // 6. Incremental Markdown Update
@@ -219,13 +158,12 @@ export async function POST(req: NextRequest) {
 
     if (skill && !skillError) {
       // Fetch all active non-superseded facts for this project
-      const { data: activeRows } = await supabase
-        .from("memory_facts")
-        .select("*")
-        .eq("project_id", projectId)
-        .is("superseded_by", null);
-
-      const activeFacts = (activeRows || []).map((row: MemoryFactRow) => fromRow(row));
+      let activeFacts: MemoryFact[] = [];
+      try {
+        activeFacts = await fetchActiveFacts(projectId);
+      } catch (e: any) {
+        console.error("Failed to fetch active facts for skill: ", e);
+      }
       const newMarkdown = generateMarkdown(skill.markdown, activeFacts, skill.name);
 
       await supabase
@@ -247,13 +185,12 @@ export async function POST(req: NextRequest) {
 
     if (persona && !personaError) {
       // Fetch all active non-superseded facts for this user
-      const { data: activeRows } = await supabase
-        .from("memory_facts")
-        .select("*")
-        .is("project_id", null)
-        .is("superseded_by", null);
-
-      const activeFacts = (activeRows || []).map((row: MemoryFactRow) => fromRow(row));
+      let activeFacts: MemoryFact[] = [];
+      try {
+        activeFacts = await fetchActiveFacts(null);
+      } catch (e: any) {
+        console.error("Failed to fetch active facts for persona: ", e);
+      }
       const newMarkdown = generateMarkdown(persona.markdown, activeFacts, persona.name);
 
       await supabase

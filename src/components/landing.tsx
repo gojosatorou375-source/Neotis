@@ -1,69 +1,88 @@
 "use client";
 
 import { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  ArrowRight,
-  Boxes,
-  Clock3,
-  FileText,
-  LayoutDashboard,
-  MessageCircle,
-  MessageSquare,
-  Network,
-  Sparkles,
-  Tag,
-} from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { GlassPanel } from "@/components/glass-panel";
-import { InterviewChoiceDialog } from "@/components/interview-choice-dialog";
-import { TOTAL_QUESTIONS } from "@/lib/questions";
 import type { Persona } from "@/types/persona";
 
-// Apple's signature "ease-out expo"-ish curve — fast start, long soft settle.
-const APPLE_EASE = [0.16, 1, 0.3, 1] as const;
+function ProviderMarquee() {
+  const shouldReduceMotion = useReducedMotion();
+  const providers = [
+    { name: "ChatGPT", src: "/logos/chatgpt.png" },
+    { name: "Claude AI", src: "/logos/claude.png" },
+    { name: "Gemini", src: "/logos/gemini.png" },
+    { name: "Perplexity", src: "/logos/perplexity.png" },
+    { name: "Grok", src: "inline-grok" },
+    { name: "DeepSeek", src: "/logos/deepseek.png" },
+  ];
+  
+  // Duplicate twice (three lists total) for seamless looping on all screens
+  const marqueeItems = [...providers, ...providers, ...providers];
 
-const reveal = (delay = 0) => ({
-  initial: { opacity: 0, y: 36 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: "-80px" },
-  transition: { duration: 0.8, delay, ease: APPLE_EASE },
-});
-
-const capabilities = [
-  {
-    icon: MessageCircle,
-    title: "One guided interview",
-    description: "10 short questions, answered once, turned into a profile every model can read.",
-  },
-  {
-    icon: MessageSquare,
-    title: "Capture every conversation",
-    description: "A lightweight browser extension pulls in chats from ChatGPT, Claude, and more — automatically.",
-  },
-  {
-    icon: Clock3,
-    title: "A timeline of your work",
-    description: "See everything you've discussed across every provider, laid out chronologically in one place.",
-  },
-  {
-    icon: Network,
-    title: "A living knowledge graph",
-    description: "Conversations connect through shared topics — drag, zoom, and explore how your ideas relate.",
-  },
-  {
-    icon: Boxes,
-    title: "Portable capsules",
-    description: "Distill any conversation into a shareable Markdown capsule you can hand to a different model.",
-  },
-  {
-    icon: LayoutDashboard,
-    title: "One recovery dashboard",
-    description: "Search anything you remember, pick up where a conversation hit its limit, and never lose context again.",
-  },
-];
+  return (
+    <section className="border-y border-black/10 py-10 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6 sm:px-10">
+        <div className="text-center text-[10px] font-black text-black/40 uppercase tracking-widest mb-8">
+          Our service supports
+        </div>
+        
+        {shouldReduceMotion ? (
+          <div className="flex flex-wrap items-center justify-center gap-x-16 gap-y-6">
+            {providers.map((prov, i) => {
+              if (prov.src === "inline-grok") {
+                return (
+                  <span key={i} className="text-sm font-black text-black/40 hover:text-black uppercase tracking-widest transition-colors duration-200 cursor-default select-none font-mono">
+                    GROK
+                  </span>
+                );
+              }
+              return (
+                <img 
+                  key={i} 
+                  src={prov.src} 
+                  alt={prov.name} 
+                  className="h-7 object-contain opacity-40 hover:opacity-100 transition-all duration-200 filter grayscale hover:grayscale-0 select-none" 
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div 
+            className="w-full relative overflow-hidden"
+            style={{
+              maskImage: "linear-gradient(to right, transparent, white 15%, white 85%, transparent)",
+              WebkitMaskImage: "linear-gradient(to right, transparent, white 15%, white 85%, transparent)"
+            }}
+          >
+            <div className="animate-marquee gap-x-20 items-center">
+              {marqueeItems.map((prov, i) => {
+                if (prov.src === "inline-grok") {
+                  return (
+                    <div key={i} className="h-7 flex items-center shrink-0 opacity-40 hover:opacity-100 hover:scale-105 transition-all duration-200 cursor-default select-none">
+                      <svg className="h-4 text-black" viewBox="0 0 80 24" fill="currentColor">
+                        <text x="0" y="17" fontFamily="monospace" fontWeight="900" fontSize="16" letterSpacing="1.5">GROK</text>
+                      </svg>
+                    </div>
+                  );
+                }
+                return (
+                  <img 
+                    key={i} 
+                    src={prov.src} 
+                    alt={prov.name} 
+                    className="h-7 object-contain opacity-40 hover:opacity-100 hover:scale-105 transition-all duration-200 filter grayscale hover:grayscale-0 select-none shrink-0" 
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
 
 interface LandingProps {
   onStart: () => void;
@@ -72,283 +91,573 @@ interface LandingProps {
   onUsePersona: (persona: Persona) => void;
 }
 
-const features = [
-  {
-    icon: MessageCircle,
-    title: "10 thoughtful questions",
-    description: "A short, conversational interview — never a form.",
-  },
-  {
-    icon: Sparkles,
-    title: "AI-synthesized profile",
-    description: "Your answers are merged and distilled, not just copied.",
-  },
-  {
-    icon: FileText,
-    title: "One portable file",
-    description: "AI_PROFILE.md works with any modern assistant.",
-  },
-];
-
 export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: LandingProps) {
-  const router = useRouter();
-  const [showChoice, setShowChoice] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.08 },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 15 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { type: "spring", stiffness: 100, damping: 15 },
+    },
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0, filter: "blur(8px)" }}
-      transition={{ duration: 0.4 }}
-      className="flex min-h-screen w-full flex-col items-center justify-center px-6 pt-28 pb-10 sm:pt-32"
-    >
-      <div className="mx-auto flex max-w-[900px] flex-col items-center text-center">
-        <motion.span
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.5 }}
-          className="mb-6 rounded-full border border-[var(--border)] bg-white/40 px-4 py-1.5 text-small font-medium text-[var(--text-secondary)] dark:bg-white/5"
-        >
-          A better way to be understood by AI
-        </motion.span>
-
-        <motion.h1
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          className="text-hero tracking-tight text-[var(--text-primary)]"
-        >
-          Meet Noetis
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="mt-6 max-w-[560px] text-body text-[var(--text-secondary)]"
-        >
-          Document your personal AI preferences and project knowledge. Generate portable profiles that teach every AI assistant how to work with you and your codebase.
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
-          className="mt-10"
-        >
-          <Link href="/recovery?tab=skills">
-            <Button size="lg" className="group">
-              Get started
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Button>
-          </Link>
-        </motion.div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
-          className="mt-4 text-small text-[var(--text-secondary)]"
-        >
-          Takes about 3–5 minutes per profile
-        </motion.p>
-
-        {personas.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45, duration: 0.6 }}
-            className="mt-16 w-full"
+    <div className="min-h-screen bg-[#FAFAFA] text-[#111111] font-sans selection:bg-[#B8FF33] selection:text-black">
+      
+      {/* 1. Header Navigation */}
+      <nav className="w-full max-w-7xl mx-auto flex items-center justify-between px-6 py-6 sm:px-10 border-b border-black/5 bg-[#FAFAFA]">
+        <div className="flex items-center gap-2 text-xl font-extrabold tracking-tight">
+          <svg className="w-6 h-6 text-[#111111]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" strokeWidth="2.5" />
+            <path d="M7 8H17M7 12H13M7 16H17" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          </svg>
+          <span>Noetis</span>
+        </div>
+        <div className="hidden md:flex items-center gap-8 text-sm font-semibold">
+          <a href="#capabilities" className="hover:text-black/60 transition-colors">Capabilities</a>
+          <a href="#how-it-works" className="hover:text-black/60 transition-colors">Process</a>
+          <a href="#use-cases" className="hover:text-black/60 transition-colors">Use Cases</a>
+        </div>
+        <div>
+          <button 
+            onClick={onStart}
+            className="bg-black text-white hover:bg-black/80 px-5 py-2.5 rounded-full text-xs font-bold tracking-wide transition-all shadow-sm"
           >
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-body font-semibold text-[var(--text-primary)]">
-                Your personas
-              </h2>
-              <Link
-                href="/personas"
-                className="text-small font-medium text-[var(--accent)] hover:underline"
+            {hasSavedProgress ? "Resume Setup" : "Get Started Free"}
+          </button>
+        </div>
+      </nav>
+
+      {/* 2. Hero Section */}
+      <section className="max-w-7xl mx-auto px-6 sm:px-10 py-16 lg:py-24 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <motion.div 
+          className="lg:col-span-7 space-y-8"
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+        >
+          <motion.h1 
+            variants={itemVariants}
+            className="text-4xl sm:text-6xl font-black tracking-tight leading-[1.1] text-[#111111]"
+          >
+            <span className="text-[#B8FF33] bg-black px-4 py-1 rounded-2xl inline-block rotate-[-2deg] border-2 border-black shadow-[3px_3px_0px_rgba(0,0,0,1)] text-xl sm:text-3xl mb-3 mr-3 select-none">Search.</span>
+            <span className="bg-[#B8FF33] text-black px-4 py-1 rounded-2xl inline-block rotate-[3deg] border-2 border-black shadow-[3px_3px_0px_rgba(0,0,0,1)] text-xl sm:text-3xl mb-3 mr-3 select-none">Sync.</span>
+            <span className="bg-white text-black px-4 py-1 rounded-2xl inline-block rotate-[-1deg] border-2 border-black shadow-[3px_3px_0px_rgba(0,0,0,1)] text-xl sm:text-3xl mb-3 select-none">Reuse.</span>
+            <span className="block mt-4 text-3xl sm:text-5xl font-black leading-none">Every ChatGPT, Claude, and Gemini conversation.</span>
+          </motion.h1>
+          
+          <motion.p 
+            variants={itemVariants}
+            className="text-base sm:text-lg text-black/70 leading-relaxed max-w-xl"
+          >
+            Noetis runs quietly in the background, capturing prompts, system instructions, and code blocks across ChatGPT, Claude, and Gemini. It organizes everything locally into searchable timelines and portable Markdown profiles, so your next AI session starts with full context instead of a blank page.
+          </motion.p>
+          
+          <motion.div 
+            variants={itemVariants}
+            className="flex flex-col sm:flex-row items-center gap-4"
+          >
+            <button 
+              onClick={onStart}
+              className="w-full sm:w-auto bg-black text-white hover:bg-black/90 px-8 py-4 rounded-full font-bold text-sm tracking-wide transition-all shadow-md flex items-center justify-center gap-2"
+            >
+              Get Started Free
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <Link href="/recovery" className="w-full sm:w-auto">
+              <button 
+                className="w-full sm:w-auto border-2 border-black bg-transparent hover:bg-black/5 px-8 py-4 rounded-full font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2"
               >
-                Manage all
-              </Link>
+                Open Dashboard
+              </button>
+            </Link>
+          </motion.div>
+
+          <motion.div variants={itemVariants} className="pt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-black/10">
+            <div className="text-xs font-semibold text-black/60">
+              <span className="font-black text-black block mb-0.5">🔒 Local-first storage</span>
+              SQLite or self-hosted Supabase instance.
             </div>
-            <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
-              {personas.slice(0, 6).map((persona) => (
-                <motion.button
-                  key={persona.id}
-                  type="button"
-                  onClick={() => onUsePersona(persona)}
-                  whileHover={{ y: -3 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="glass-panel flex items-center gap-3 rounded-xl3 p-4 text-left"
-                >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/15">
-                    <Tag className="h-4 w-4 text-[var(--accent)]" strokeWidth={1.75} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-small font-semibold text-[var(--text-primary)]">
-                      {persona.name}
-                    </p>
-                    <p className="truncate text-[11px] text-[var(--text-secondary)]">
-                      Updated {new Date(persona.updatedAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </motion.button>
-              ))}
+            <div className="text-xs font-semibold text-black/60">
+              <span className="font-black text-black block mb-0.5">⚡ Zero-latency capture</span>
+              Runs in an isolated Shadow DOM layer.
+            </div>
+            <div className="text-xs font-semibold text-black/60">
+              <span className="font-black text-black block mb-0.5">💻 Built for developers</span>
+              Native MCP server support for VS Code & Cursor.
             </div>
           </motion.div>
-        )}
-
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.55, duration: 0.6 }}
-          className="mt-20 grid w-full grid-cols-1 gap-4 sm:grid-cols-3"
-        >
-          {features.map((feature) => (
-            <GlassPanel
-              key={feature.title}
-              className="flex flex-col items-start gap-3 p-6 text-left"
-              whileHover={{ y: -4 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            >
-              <feature.icon
-                className="h-5 w-5 text-[var(--accent)]"
-                strokeWidth={1.75}
-              />
-              <h3 className="text-body font-semibold text-[var(--text-primary)]">
-                {feature.title}
-              </h3>
-              <p className="text-small text-[var(--text-secondary)]">
-                {feature.description}
-              </p>
-            </GlassPanel>
-          ))}
         </motion.div>
-      </div>
-
-      {/* --- Everything the product does, explained for a first-time visitor --- */}
-      <div className="mx-auto mt-32 flex w-full max-w-[1100px] flex-col items-center px-2 text-center">
-        <motion.span
-          {...reveal()}
-          className="mb-4 rounded-full border border-[var(--border)] bg-white/40 px-4 py-1.5 text-small font-medium text-[var(--text-secondary)] dark:bg-white/5"
+        
+        {/* Right Side: Illustrated Abstract Megaphone / Data Funnel Graphic */}
+        <motion.div 
+          className="lg:col-span-5 flex justify-center relative"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
         >
-          Beyond the profile
-        </motion.span>
-        <motion.h2 {...reveal(0.08)} className="text-section tracking-tight text-[var(--text-primary)]">
-          One place that remembers everything
-        </motion.h2>
-        <motion.p {...reveal(0.16)} className="mt-4 max-w-[620px] text-body text-[var(--text-secondary)]">
-          Noetis doesn&apos;t stop at your profile. It quietly builds a
-          complete, searchable memory of your AI work — across every
-          provider you use.
-        </motion.p>
-
-        <div className="mt-14 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {capabilities.map((item, i) => (
-            <motion.div key={item.title} {...reveal(0.06 * i)}>
-              <GlassPanel
-                className="flex h-full flex-col items-start gap-3 p-6 text-left"
-                whileHover={{ y: -4 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent)]/15">
-                  <item.icon className="h-5 w-5 text-[var(--accent)]" strokeWidth={1.75} />
-                </div>
-                <h3 className="text-body font-semibold text-[var(--text-primary)]">{item.title}</h3>
-                <p className="text-small text-[var(--text-secondary)]">{item.description}</p>
-              </GlassPanel>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* --- Dashboard preview + CTA --- */}
-      <motion.div {...reveal()} className="mx-auto mt-28 mb-24 w-full max-w-[1100px] px-2">
-        <GlassPanel className="relative overflow-hidden p-8 sm:p-12">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,var(--accent)_0%,transparent_45%)] opacity-[0.08]" />
-          <div className="relative grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
-            <div className="text-left">
-              <h2 className="text-section tracking-tight text-[var(--text-primary)]">
-                See it all in the Dashboard
-              </h2>
-              <p className="mt-4 max-w-[440px] text-body text-[var(--text-secondary)]">
-                Every captured conversation, your timeline, your knowledge
-                graph, and your saved capsules — recovered stats included —
-                live in one workspace built to help you pick up exactly where
-                you left off.
-              </p>
-              <div className="mt-8">
-                <Link href="/recovery">
-                  <Button size="lg" className="group">
-                    Open the Dashboard
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                  </Button>
-                </Link>
-              </div>
+          <div className="w-full max-w-[380px] h-[340px] border-2 border-black rounded-[24px] bg-white relative flex items-center justify-center p-8 shadow-[8px_8px_0px_rgba(0,0,0,1)]">
+            <svg className="w-full h-full text-black" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Funnel Rings */}
+              <circle cx="100" cy="100" r="75" stroke="currentColor" strokeWidth="2.5" strokeDasharray="6 6" />
+              <circle cx="100" cy="100" r="50" stroke="currentColor" strokeWidth="2.5" />
+              {/* Accent colored solid megaphone shape */}
+              <path d="M60 85 L120 60 L140 100 L120 140 L60 115 Z" fill="#B8FF33" stroke="currentColor" strokeWidth="2.5" />
+              <path d="M50 95 H70 V105 H50 Z" fill="currentColor" />
+              {/* Converging nodes */}
+              <circle cx="100" cy="30" r="8" fill="currentColor" />
+              <circle cx="160" cy="70" r="10" fill="#B8FF33" stroke="currentColor" strokeWidth="2" />
+              <circle cx="150" cy="140" r="6" fill="currentColor" />
+              <circle cx="45" cy="150" r="9" fill="#B8FF33" stroke="currentColor" strokeWidth="2" />
+            </svg>
+            <div className="absolute top-4 left-4 bg-[#B8FF33] border-2 border-black rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+              Local First
             </div>
-
-            {/* Stylized dashboard mockup — mirrors the real layout without being a literal screenshot */}
-            <motion.div
-              initial={{ opacity: 0, y: 24, scale: 0.97 }}
-              whileInView={{ opacity: 1, y: 0, scale: 1 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.9, delay: 0.15, ease: APPLE_EASE }}
-              className="overflow-hidden rounded-2xl border border-white/10 bg-[#111114] shadow-[0_20px_60px_-20px_rgba(0,0,0,0.5)]"
-            >
-              <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-                <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-                <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-                <span className="ml-3 text-[11px] font-medium text-white/40">Dashboard</span>
-              </div>
-              <div className="space-y-3 p-4">
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                  <div className="mb-2 h-2 w-28 rounded-full bg-white/15" />
-                  <div className="h-8 w-full rounded-lg bg-white/[0.04]" />
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {[25, 12, 6, "0h"].map((val, i) => (
-                    <div key={i} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                      <div className="text-[15px] font-semibold text-white/80">{val}</div>
-                      <div className="mt-1 h-1.5 w-10 rounded-full bg-white/10" />
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {["ChatGPT", "Claude", "Gemini"].map((label, i) => (
-                    <div
-                      key={label}
-                      className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2"
-                    >
-                      <span
-                        className="h-1.5 w-1.5 rounded-full"
-                        style={{ background: ["#10a37f", "#d97757", "#4285f4"][i] }}
-                      />
-                      <span className="text-[10.5px] font-medium text-white/50">{label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
+            <div className="absolute bottom-4 right-4 bg-black text-white border-2 border-black rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
+              Secure
+            </div>
           </div>
-        </GlassPanel>
-      </motion.div>
+        </motion.div>
+      </section>
 
-      <AnimatePresence>
-        {showChoice && (
-          <InterviewChoiceDialog
-            onClose={() => setShowChoice(false)}
-            onChoosePersonal={() => {
-              setShowChoice(false);
-              onStart();
-            }}
-            onChooseProject={() => {
-              setShowChoice(false);
-              router.push("/skills/new?mode=project");
-            }}
-          />
-        )}
-      </AnimatePresence>
-    </motion.div>
+      <ProviderMarquee />
+
+      {/* 4. Capabilities Grid Section */}
+      <section id="capabilities" className="max-w-7xl mx-auto px-6 sm:px-10 py-24">
+        <div className="mb-16 space-y-4">
+          <span className="inline-block bg-[#B8FF33] text-black border-2 border-black px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-[3px_3px_0px_rgba(0,0,0,1)]">
+            Capabilities
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            Four systems keeping your AI workflow organized.
+          </h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Card 1: Seamless Capture (White) */}
+          <div className="border-2 border-black bg-white rounded-[20px] p-8 shadow-[6px_6px_0px_rgba(0,0,0,1)] flex flex-col justify-between min-h-[280px] hover:-translate-y-1 hover:shadow-[10px_10px_0px_rgba(0,0,0,1)] transition-all group hover:border-[#B8FF33]">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="bg-[#B8FF33] text-black text-[10px] font-extrabold uppercase px-3 py-1 rounded-full border border-black">
+                  Browser Extension
+                </span>
+                {/* Custom SVG Icon */}
+                <svg className="w-8 h-8 text-black" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2.5" />
+                  <path d="M8 12H16M12 8V16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold tracking-tight">Capture every AI conversation automatically</h3>
+              <p className="text-sm text-black/70 leading-relaxed">
+                No more copy-pasting chat transcripts into a notes app. The Noetis browser extension injects a lightweight capture layer into ChatGPT, Claude, Gemini, Perplexity, DeepSeek, and Grok. A background observer detects new messages as they render, extracts clean text and code blocks, and stores them locally — automatically, in real time.
+              </p>
+            </div>
+            <div className="pt-6 flex justify-between items-center">
+              <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Manifest V3 · Real-Time Capture · 6 AI Providers</span>
+              <button className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center group-hover:bg-[#B8FF33] group-hover:text-black transition-colors border border-black">
+                <ArrowUpRight className="w-5 h-5 group-hover:rotate-45 transition-transform" />
+              </button>
+            </div>
+          </div>
+
+          {/* Card 2: Portable AI Personas (Black) */}
+          <div className="border-2 border-black bg-black text-white rounded-[20px] p-8 shadow-[6px_6px_0px_rgba(0,0,0,1)] flex flex-col justify-between min-h-[280px] hover:-translate-y-1 hover:shadow-[10px_10px_0px_rgba(0,0,0,1)] transition-all group">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="bg-white text-black text-[10px] font-extrabold uppercase px-3 py-1 rounded-full border border-black">
+                  Profiles
+                </span>
+                {/* Custom SVG Icon */}
+                <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M4 8H20M4 16H20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                  <circle cx="8" cy="8" r="3" fill="#B8FF33" stroke="currentColor" strokeWidth="2" />
+                  <circle cx="16" cy="16" r="3" fill="#B8FF33" stroke="currentColor" strokeWidth="2" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold tracking-tight">Teach every AI model your preferences once</h3>
+              <p className="text-sm text-white/70 leading-relaxed">
+                Instead of repeating your coding style, tone, and constraints in every new chat, answer a short guided interview and Noetis compiles it into a single portable <code className="text-[#B8FF33]">AI_PROFILE.md</code> file. Drop it into Claude's custom instructions, Cursor's rules file, or any model's system prompt to get consistent, personalized output from the first message.
+              </p>
+            </div>
+            <div className="pt-6 flex justify-between items-center">
+              <span className="text-[10px] font-black uppercase tracking-wider text-white/40">Markdown profiles · Cross-model compatible · Reusable</span>
+              <button className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center group-hover:bg-[#B8FF33] transition-colors border border-black">
+                <ArrowUpRight className="w-5 h-5 group-hover:rotate-45 transition-transform" />
+              </button>
+            </div>
+          </div>
+
+          {/* Card 3: Timeline & Graphs (White) */}
+          <div className="border-2 border-black bg-white rounded-[20px] p-8 shadow-[6px_6px_0px_rgba(0,0,0,1)] flex flex-col justify-between min-h-[280px] hover:-translate-y-1 hover:shadow-[10px_10px_0px_rgba(0,0,0,1)] transition-all group hover:border-[#B8FF33]">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="bg-[#B8FF33] text-black text-[10px] font-extrabold uppercase px-3 py-1 rounded-full border border-black">
+                  Knowledge Graph
+                </span>
+                {/* Custom SVG Icon */}
+                <svg className="w-8 h-8 text-black" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d="M22 22L16 16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                  <circle cx="12" cy="12" r="3" fill="#B8FF33" stroke="currentColor" strokeWidth="2" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold tracking-tight">Find any past conversation in seconds</h3>
+              <p className="text-sm text-black/70 leading-relaxed">
+                Every captured conversation is grouped by topic using a local similarity-matching engine, so related chats — even from different AI models — surface together. A visual knowledge graph shows how your projects and ideas connect over time, and semantic search means you can find a conversation by describing what you remember, not just the exact title.
+              </p>
+            </div>
+            <div className="pt-6 flex justify-between items-center">
+              <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Local search · Duplicate detection · Visual mapping</span>
+              <button className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center group-hover:bg-[#B8FF33] group-hover:text-black transition-colors border border-black">
+                <ArrowUpRight className="w-5 h-5 group-hover:rotate-45 transition-transform" />
+              </button>
+            </div>
+          </div>
+
+          {/* Card 4: Proxima Desktop Sync (Black) */}
+          <div className="border-2 border-black bg-black text-white rounded-[20px] p-8 shadow-[6px_6px_0px_rgba(0,0,0,1)] flex flex-col justify-between min-h-[280px] hover:-translate-y-1 hover:shadow-[10px_10px_0px_rgba(0,0,0,1)] transition-all group">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="bg-white text-black text-[10px] font-extrabold uppercase px-3 py-1 rounded-full border border-black">
+                  Desktop Gateway
+                </span>
+                {/* Custom SVG Icon */}
+                <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d="M12 1V5" stroke="currentColor" strokeWidth="2.5" />
+                  <path d="M12 19V23" stroke="currentColor" strokeWidth="2.5" />
+                  <circle cx="12" cy="12" r="2" fill="#B8FF33" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold tracking-tight">Bring your AI history into your code editor</h3>
+              <p className="text-sm text-white/70 leading-relaxed">
+                Noetis runs an internal MCP (Model Context Protocol) server that connects directly to Cursor, VS Code, and other MCP-compatible editors. Your coding assistant can search and recall past conversations, past decisions, and past code without you switching tabs or copy-pasting.
+              </p>
+            </div>
+            <div className="pt-6 flex justify-between items-center">
+              <span className="text-[10px] font-black uppercase tracking-wider text-white/40">Built-in MCP server · Editor-native context</span>
+              <button className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center group-hover:bg-[#B8FF33] transition-colors border border-black">
+                <ArrowUpRight className="w-5 h-5 group-hover:rotate-45 transition-transform" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. "Let's make things happen" Band */}
+      <section className="max-w-7xl mx-auto px-6 sm:px-10 py-12">
+        <div className="bg-[#F0F0F0] border-2 border-black rounded-[24px] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden shadow-[6px_6px_0px_rgba(0,0,0,1)]">
+          <div className="space-y-4 max-w-xl z-10">
+            <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Let's make things happen</h3>
+            <p className="text-sm text-black/70 leading-relaxed">
+              Start centralizing your conversations today to build a persistent local knowledge base for your coding projects and terminal agents.
+            </p>
+            <button 
+              onClick={onStart}
+              className="bg-black text-white hover:bg-black/90 px-6 py-3.5 rounded-full font-bold text-xs tracking-wide transition-all shadow-sm border border-black"
+            >
+              Get Started Free
+            </button>
+          </div>
+          
+          {/* Abstract Star cluster illustration */}
+          <div className="relative w-36 h-36 shrink-0 flex items-center justify-center">
+            <svg className="w-full h-full text-black" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M50 15 L58 38 L81 38 L62 52 L70 75 L50 60 L30 75 L38 52 L19 38 L42 38 Z" fill="#B8FF33" stroke="currentColor" strokeWidth="2" />
+              <circle cx="50" cy="50" r="10" fill="currentColor" />
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. How it works (Process Row) */}
+      <section id="how-it-works" className="max-w-7xl mx-auto px-6 sm:px-10 py-24 bg-[#FAFAFA]">
+        <div className="text-center max-w-xl mx-auto mb-16 space-y-4">
+          <span className="inline-block bg-[#B8FF33] text-black border-2 border-black px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-[3px_3px_0px_rgba(0,0,0,1)]">
+            Process
+          </span>
+          <h2 className="text-3xl font-extrabold tracking-tight">Three steps to organized knowledge.</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-4xl mx-auto">
+          {/* Step 1 */}
+          <div className="space-y-4 text-center">
+            <div className="w-16 h-16 rounded-full border-2 border-black bg-white flex items-center justify-center text-xl font-black text-black mx-auto shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+              1
+            </div>
+            <h4 className="text-lg font-bold tracking-tight">Automatic, silent capture</h4>
+            <p className="text-xs text-black/60 leading-relaxed max-w-xs mx-auto">
+              Start chatting on ChatGPT, Claude, or Gemini as usual. Noetis detects the session, extracts the full conversation — including code blocks and referenced files — and stores it locally without any manual export step.
+            </p>
+          </div>
+
+          {/* Step 2 */}
+          <div className="space-y-4 text-center">
+            <div className="w-16 h-16 rounded-full border-2 border-black bg-white flex items-center justify-center text-xl font-black text-black mx-auto shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+              2
+            </div>
+            <h4 className="text-lg font-bold tracking-tight">Turn raw chats into structured knowledge</h4>
+            <p className="text-xs text-black/60 leading-relaxed max-w-xs mx-auto">
+              Noetis parses each conversation for reusable information: libraries used, decisions made, problems solved. This gets grouped into project-level memory so related work stays connected, even across different AI tools.
+            </p>
+          </div>
+
+          {/* Step 3 */}
+          <div className="space-y-4 text-center">
+            <div className="w-16 h-16 rounded-full border-2 border-black bg-white flex items-center justify-center text-xl font-black text-black mx-auto shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+              3
+            </div>
+            <h4 className="text-lg font-bold tracking-tight">Bring context into every new session</h4>
+            <p className="text-xs text-black/60 leading-relaxed max-w-xs mx-auto">
+              Load your saved profile into a new chat, or let your code editor query your history directly through the MCP server. Either way, you stop repeating yourself and start where you left off.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 7. Use Cases / Case Studies */}
+      <section id="use-cases" className="max-w-7xl mx-auto px-6 sm:px-10 py-24 border-t border-black/10">
+        <div className="mb-16 space-y-4">
+          <span className="inline-block bg-[#B8FF33] text-black border-2 border-black px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-[3px_3px_0px_rgba(0,0,0,1)]">
+            Use Cases
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            Real workflows built on centralized AI context.
+          </h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Use Case 1 */}
+          <div className="border-2 border-black bg-black text-white rounded-[20px] p-6 shadow-[6px_6px_0px_rgba(0,0,0,1)] flex flex-col justify-between min-h-[240px]">
+            <div className="space-y-3">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#B8FF33] block">The Multi-Model Developer</span>
+              <p className="text-xs font-bold text-white/50 leading-relaxed">
+                <strong className="text-white block mb-1">Problem:</strong> Using Claude for coding, ChatGPT for brainstorming, and Gemini for long documents means your project context is split across three separate histories.
+              </p>
+              <p className="text-xs font-bold text-white/80 leading-relaxed">
+                <strong className="text-[#B8FF33] block mb-1">How Noetis helps:</strong> All three streams merge into one timeline. When Claude writes a component and ChatGPT drafts the copy for it, Noetis links them under the same project, so you can search across every model at once.
+              </p>
+            </div>
+            <div className="pt-4">
+              <Link href="/recovery" className="text-xs font-black text-[#B8FF33] hover:underline uppercase tracking-wider flex items-center gap-1.5">
+                Learn more
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Use Case 2 */}
+          <div className="border-2 border-black bg-black text-white rounded-[20px] p-6 shadow-[6px_6px_0px_rgba(0,0,0,1)] flex flex-col justify-between min-h-[240px]">
+            <div className="space-y-3">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#B8FF33] block">The Freelancer Juggling Multiple Clients</span>
+              <p className="text-xs font-bold text-white/50 leading-relaxed">
+                <strong className="text-white block mb-1">Problem:</strong> You agreed on a styling convention or API structure in an AI chat last week, and now you can't remember which conversation it was in.
+              </p>
+              <p className="text-xs font-bold text-white/80 leading-relaxed">
+                <strong className="text-[#B8FF33] block mb-1">How Noetis helps:</strong> Use natural-language search to describe what you remember — for example, "tailwind button styles" — and Noetis surfaces the matching conversation and code block instantly.
+              </p>
+            </div>
+            <div className="pt-4">
+              <Link href="/recovery" className="text-xs font-black text-[#B8FF33] hover:underline uppercase tracking-wider flex items-center gap-1.5">
+                Learn more
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Use Case 3 */}
+          <div className="border-2 border-black bg-black text-white rounded-[20px] p-6 shadow-[6px_6px_0px_rgba(0,0,0,1)] flex flex-col justify-between min-h-[240px]">
+            <div className="space-y-3">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#B8FF33] block">The AI-Assisted Engineering Team</span>
+              <p className="text-xs font-bold text-white/50 leading-relaxed">
+                <strong className="text-white block mb-1">Problem:</strong> A teammate's AI-assisted decisions from a browser chat never make it into the codebase's shared context.
+              </p>
+              <p className="text-xs font-bold text-white/80 leading-relaxed">
+                <strong className="text-[#B8FF33] block mb-1">How Noetis helps:</strong> Through the MCP server, any team member's AI-enabled editor can query the shared conversation history, keeping architectural decisions and conventions consistent across the team.
+              </p>
+            </div>
+            <div className="pt-4">
+              <Link href="/recovery" className="text-xs font-black text-[#B8FF33] hover:underline uppercase tracking-wider flex items-center gap-1.5">
+                Learn more
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 8. Comparison Table Section */}
+      <section className="max-w-7xl mx-auto px-6 sm:px-10 py-24 border-t border-black/10 bg-white">
+        <div className="mb-16 space-y-4">
+          <span className="inline-block bg-[#B8FF33] text-black border-2 border-black px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-[3px_3px_0px_rgba(0,0,0,1)]">
+            Comparison
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#111111]">
+            Noetis vs. Manual Methods
+          </h2>
+          <p className="text-sm text-black/60 max-w-xl">
+            See how a dedicated local AI conversation manager compares to traditional approaches.
+          </p>
+        </div>
+
+        <div className="overflow-x-auto rounded-[20px] border-2 border-black shadow-[6px_6px_0px_rgba(0,0,0,1)]">
+          <table className="w-full border-collapse text-left text-xs bg-white">
+            <thead>
+              <tr className="border-b-2 border-black bg-[#B8FF33] text-black font-black uppercase tracking-wider">
+                <th className="p-4 sm:p-5 border-r border-black">Capability</th>
+                <th className="p-4 sm:p-5 border-r border-black">Manual Copy-Paste</th>
+                <th className="p-4 sm:p-5 border-r border-black">Browser History</th>
+                <th className="p-4 sm:p-5">Noetis</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y border-black font-bold text-black/75">
+              <tr className="border-b border-black/15">
+                <td className="p-4 sm:p-5 border-r border-black/15 font-black uppercase tracking-wide text-black">Multi-Model Search</td>
+                <td className="p-4 sm:p-5 border-r border-black/15 text-black/40">Not possible</td>
+                <td className="p-4 sm:p-5 border-r border-black/15 text-black/40">Model-locked only</td>
+                <td className="p-4 sm:p-5 bg-[#B8FF33]/5 text-black font-black">Unified search across all providers</td>
+              </tr>
+              <tr className="border-b border-black/15">
+                <td className="p-4 sm:p-5 border-r border-black/15 font-black uppercase tracking-wide text-black">Automatic Context Extraction</td>
+                <td className="p-4 sm:p-5 border-r border-black/15 text-black/40">Not available</td>
+                <td className="p-4 sm:p-5 border-r border-black/15 text-black/40">Not available</td>
+                <td className="p-4 sm:p-5 bg-[#B8FF33]/5 text-black font-black">Automatic, structured by project</td>
+              </tr>
+              <tr className="border-b border-black/15">
+                <td className="p-4 sm:p-5 border-r border-black/15 font-black uppercase tracking-wide text-black">Data Storage location</td>
+                <td className="p-4 sm:p-5 border-r border-black/15 text-black/40">Not applicable</td>
+                <td className="p-4 sm:p-5 border-r border-black/15 text-black/40">Not applicable</td>
+                <td className="p-4 sm:p-5 bg-[#B8FF33]/5 text-black font-black">Fully local-first storage</td>
+              </tr>
+              <tr className="border-b border-black/15">
+                <td className="p-4 sm:p-5 border-r border-black/15 font-black uppercase tracking-wide text-black">IDE Editor Integration</td>
+                <td className="p-4 sm:p-5 border-r border-black/15 text-black/40">Not available</td>
+                <td className="p-4 sm:p-5 border-r border-black/15 text-black/40">Not available</td>
+                <td className="p-4 sm:p-5 bg-[#B8FF33]/5 text-black font-black">Native MCP server support</td>
+              </tr>
+              <tr className="border-b border-black/15">
+                <td className="p-4 sm:p-5 border-r border-black/15 font-black uppercase tracking-wide text-black">Portable AI Persona Profiles</td>
+                <td className="p-4 sm:p-5 border-r border-black/15 text-black/40">Not available</td>
+                <td className="p-4 sm:p-5 border-r border-black/15 text-black/40">Not available</td>
+                <td className="p-4 sm:p-5 bg-[#B8FF33]/5 text-black font-black">Generates a reusable AI_PROFILE.md</td>
+              </tr>
+              <tr>
+                <td className="p-4 sm:p-5 border-r border-black/15 font-black uppercase tracking-wide text-black">Data Privacy</td>
+                <td className="p-4 sm:p-5 border-r border-black/15 text-black/40">Depends on destination</td>
+                <td className="p-4 sm:p-5 border-r border-black/15 text-black/40">Tied to browser vendor</td>
+                <td className="p-4 sm:p-5 bg-[#B8FF33]/5 text-black font-black">Local-only, no cloud tracking</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* 9. FAQ Section */}
+      <section className="max-w-4xl mx-auto px-6 sm:px-10 py-24 border-t border-black/10">
+        <div className="text-center mb-16 space-y-4">
+          <span className="inline-block bg-[#B8FF33] text-black border-2 border-black px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-[3px_3px_0px_rgba(0,0,0,1)]">
+            FAQ
+          </span>
+          <h2 className="text-3xl font-extrabold tracking-tight text-[#111111]">
+            Frequently Asked Questions
+          </h2>
+        </div>
+
+        <div className="space-y-6">
+          <div className="border-2 border-black rounded-2xl p-6 bg-white shadow-[3px_3px_0px_rgba(0,0,0,1)]">
+            <h4 className="text-sm font-black uppercase tracking-wide text-black mb-2">Does Noetis need API keys to capture conversations?</h4>
+            <p className="text-xs font-semibold leading-relaxed text-black/60">
+              No. Noetis captures conversations directly from the browser interface using a lightweight observer, so there's no API key setup and no risk of hitting provider rate limits.
+            </p>
+          </div>
+
+          <div className="border-2 border-black rounded-2xl p-6 bg-white shadow-[3px_3px_0px_rgba(0,0,0,1)]">
+            <h4 className="text-sm font-black uppercase tracking-wide text-black mb-2">Is my conversation data sent to Noetis's servers?</h4>
+            <p className="text-xs font-semibold leading-relaxed text-black/60">
+              No. Noetis is local-first by design. Conversations, summaries, and generated profiles are stored in a local database on your machine or your own Supabase instance — never on a third-party cloud service you don't control.
+            </p>
+          </div>
+
+          <div className="border-2 border-black rounded-2xl p-6 bg-white shadow-[3px_3px_0px_rgba(0,0,0,1)]">
+            <h4 className="text-sm font-black uppercase tracking-wide text-black mb-2">Which AI platforms does Noetis support?</h4>
+            <p className="text-xs font-semibold leading-relaxed text-black/60">
+              Noetis currently supports ChatGPT, Claude, Gemini, Perplexity, DeepSeek, and Grok, with high-precision capture on ChatGPT and Claude.
+            </p>
+          </div>
+
+          <div className="border-2 border-black rounded-2xl p-6 bg-white shadow-[3px_3px_0px_rgba(0,0,0,1)]">
+            <h4 className="text-sm font-black uppercase tracking-wide text-black mb-2">What is an MCP server, and why does it matter?</h4>
+            <p className="text-xs font-semibold leading-relaxed text-black/60">
+              Model Context Protocol (MCP) is an open standard that lets AI-enabled applications securely read data from local tools. Noetis includes an internal MCP server so editors like Cursor and VS Code can search and reference your past AI conversations directly, without leaving the editor.
+            </p>
+          </div>
+
+          <div className="border-2 border-black rounded-2xl p-6 bg-white shadow-[3px_3px_0px_rgba(0,0,0,1)]">
+            <h4 className="text-sm font-black uppercase tracking-wide text-black mb-2">Do I need to install anything extra to use the MCP server?</h4>
+            <p className="text-xs font-semibold leading-relaxed text-black/60">
+              No. The internal MCP server is built into Noetis and runs alongside the browser extension and web dashboard. Once enabled, any MCP-compatible editor can connect to it directly — no separate desktop app required.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 10. Persona Quick selection block (if any saved) */}
+      {personas.length > 0 && (
+        <section className="max-w-7xl mx-auto px-6 sm:px-10 pb-24">
+          <div className="border-t border-black/10 pt-16 mb-8 flex items-center justify-between">
+            <h3 className="text-xl font-bold tracking-tight">Resume Saved Personas</h3>
+            <Link href="/personas" className="text-xs font-bold hover:underline">
+              View All Personas
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {personas.slice(0, 3).map((persona) => (
+              <button
+                key={persona.id}
+                onClick={() => onUsePersona(persona)}
+                className="p-5 text-left border-2 border-black rounded-xl bg-white shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all flex items-center justify-between group"
+              >
+                <div>
+                  <div className="font-extrabold text-sm text-black mb-0.5">{persona.name}</div>
+                  <div className="text-[10px] text-black/50 font-mono">ID: {persona.id.slice(0, 8)}</div>
+                </div>
+                <ArrowUpRight className="w-4 h-4 text-black/40 group-hover:text-black transition-colors" />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 11. Footer */}
+      <footer className="w-full bg-[#111111] text-white/60 py-16 border-t border-black/20 text-xs font-medium">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div>
+            <div className="flex items-center gap-2 text-white font-extrabold tracking-tight text-sm mb-2">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" strokeWidth="2.5" />
+              </svg>
+              <span>Noetis</span>
+            </div>
+            <p className="text-white/40">Local-first conversation capture and AI profile manager.</p>
+          </div>
+          <div className="flex gap-8 text-white/80">
+            <Link href="/recovery" className="hover:text-[#B8FF33] transition-colors">Dashboard</Link>
+            <Link href="/personas" className="hover:text-[#B8FF33] transition-colors">Personas</Link>
+            <Link href="/skills" className="hover:text-[#B8FF33] transition-colors">Skills</Link>
+          </div>
+        </div>
+      </footer>
+
+    </div>
   );
 }

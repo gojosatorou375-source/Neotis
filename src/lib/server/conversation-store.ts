@@ -123,3 +123,15 @@ export async function updateConversation(
   if (!data) return null;
   return fromRow(data as ConversationRow);
 }
+
+export async function readConversation(id: string): Promise<Conversation | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(`Failed to read conversation: ${error.message}`);
+  if (!data) return null;
+  return fromRow(data as ConversationRow);
+}

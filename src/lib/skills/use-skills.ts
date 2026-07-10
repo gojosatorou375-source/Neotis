@@ -71,6 +71,27 @@ export function useSkills() {
     [setSkills]
   );
 
+  const updateSkillMarkdown = useCallback(
+    (id: string, markdown: string) => {
+      setSkills((prev) =>
+        prev.map((s) => {
+          if (s.id !== id) return s;
+          const now = new Date().toISOString();
+          const priorVersion = { answers: s.answers, markdown: s.markdown, savedAt: s.updatedAt };
+          const updated: Skill = {
+            ...s,
+            markdown,
+            updatedAt: now,
+            history: [priorVersion, ...s.history].slice(0, MAX_HISTORY),
+          };
+          skillsCollection.update(updated).catch(logOnError("Failed to update skill markdown"));
+          return updated;
+        })
+      );
+    },
+    [setSkills]
+  );
+
   const restoreSkillVersion = useCallback(
     (id: string, versionIndex: number) => {
       setSkills((prev) =>
@@ -117,7 +138,7 @@ export function useSkills() {
       setSkills((prev) =>
         prev.map((s) => {
           if (s.id !== id) return s;
-          const updated = { ...s, tags };
+          const updated = { ...s, tags, updatedAt: new Date().toISOString() };
           skillsCollection.update(updated).catch(logOnError("Failed to save skill tags"));
           return updated;
         })
@@ -131,7 +152,7 @@ export function useSkills() {
       setSkills((prev) =>
         prev.map((s) => {
           if (s.id !== id) return s;
-          const updated = { ...s, favorite: !s.favorite };
+          const updated = { ...s, favorite: !s.favorite, updatedAt: new Date().toISOString() };
           skillsCollection.update(updated).catch(logOnError("Failed to toggle skill favorite"));
           return updated;
         })
@@ -145,7 +166,7 @@ export function useSkills() {
       setSkills((prev) =>
         prev.map((s) => {
           if (s.id !== id) return s;
-          const updated = { ...s, pinned: !s.pinned };
+          const updated = { ...s, pinned: !s.pinned, updatedAt: new Date().toISOString() };
           skillsCollection.update(updated).catch(logOnError("Failed to toggle skill pin"));
           return updated;
         })
@@ -159,7 +180,7 @@ export function useSkills() {
       setSkills((prev) =>
         prev.map((s) => {
           if (s.id !== id) return s;
-          const updated = { ...s, archived: !s.archived };
+          const updated = { ...s, archived: !s.archived, updatedAt: new Date().toISOString() };
           skillsCollection.update(updated).catch(logOnError("Failed to toggle skill archive"));
           return updated;
         })
@@ -207,6 +228,7 @@ export function useSkills() {
     skills,
     createSkill,
     updateSkillAnswers,
+    updateSkillMarkdown,
     restoreSkillVersion,
     renameSkill,
     setSkillTags,

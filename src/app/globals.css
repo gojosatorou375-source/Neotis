@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --bg: #f5f5f7;
-    --card: rgba(255, 255, 255, 0.55);
-    --card-solid: #ffffff;
-    --border: rgba(255, 255, 255, 0.6);
-    --text-primary: #1d1d1f;
-    --text-secondary: #6e6e73;
-    --accent: #007aff;
-    --success: #34c759;
+    --bg: #FAFAFA;
+    --card: #FFFFFF;
+    --card-solid: #FFFFFF;
+    --border: #000000;
+    --text-primary: #111111;
+    --text-secondary: #4B5563;
+    --accent: #B8FF33;
+    --success: #10B981;
   }
 
   .dark {
-    --bg: #0a0a0a;
-    --card: rgba(20, 20, 20, 0.45);
-    --card-solid: #161616;
-    --border: rgba(255, 255, 255, 0.08);
-    --text-primary: #f5f5f7;
-    --text-secondary: #9a9a9e;
-    --accent: #0a84ff;
-    --success: #34c759;
+    --bg: #111111;
+    --card: #1C1C1E;
+    --card-solid: #1C1C1E;
+    --border: #FFFFFF;
+    --text-primary: #EDEDED;
+    --text-secondary: #9CA3AF;
+    --accent: #B8FF33;
+    --success: #34D399;
   }
 
   * {
@@ -36,19 +36,18 @@
   body {
     background: var(--bg);
     color: var(--text-primary);
-    font-family: "SF Pro Display", Inter, ui-sans-serif, system-ui, -apple-system,
-      sans-serif;
+    font-family: "SF Pro Display", Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
     transition: background-color 0.4s ease, color 0.4s ease;
     min-height: 100vh;
   }
 
   ::selection {
     background: var(--accent);
-    color: white;
+    color: black;
   }
 
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--border);
     outline-offset: 3px;
   }
 }
@@ -56,14 +55,15 @@
 @layer components {
   .glass-panel {
     background: var(--card);
-    border: 1px solid var(--border);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+    border: 2px solid var(--border) !important;
+    border-radius: 20px !important;
+    box-shadow: 4px 4px 0px var(--border) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
 
-  .dark .glass-panel {
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  .glass-panel:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 6px 6px 0px var(--border) !important;
   }
 }
 
@@ -74,7 +74,7 @@
   filter: blur(90px);
   pointer-events: none;
   z-index: 0;
-  opacity: 0.35;
+  opacity: 0.15;
 }
 
 ::-webkit-scrollbar {
@@ -83,4 +83,23 @@
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 999px;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-33.333%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 35s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
 }

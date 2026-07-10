@@ -26,8 +26,8 @@ Open `http://localhost:3000`.
    - `OPENROUTER_API_KEY` (optional, for AI document enhancement)
    - `NEXT_PUBLIC_SUPABASE_URL` (from Supabase project settings)
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (from Supabase project settings)
-   - `APP_SECRET_KEY` (generate a random string for server-side access key validation)
-   - `JWT_SECRET_KEY` (generate a random string for signing session tokens)
+   - `APP_SECRET_KEY` (or `NEXT_PUBLIC_APP_ACCESS_KEY` — secure key used for browser extension API verification)
+   - `JWT_SECRET_KEY` (random string for signing extension session tokens)
 5. **Deploy!** Click "Deploy" button in Vercel dashboard
 
 ### Local Dev Environment Setup

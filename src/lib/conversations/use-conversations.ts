@@ -110,6 +110,34 @@ export function useConversations() {
     []
   );
 
+  const exportConversationMarkdown = useCallback(
+    async (id: string): Promise<{ ok: boolean; markdown?: string; filename?: string; error?: string }> => {
+      try {
+        const res = await fetch(`/api/conversations/${id}/export`, {
+          method: "GET",
+          headers: accessHeaders(),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          return { ok: false, error: data.error || "Export failed." };
+        }
+        const markdown = await res.text();
+        const disposition = res.headers.get("content-disposition");
+        let filename = "conversation-export.md";
+        if (disposition && disposition.indexOf("filename=") !== -1) {
+          const matches = /filename="([^"]+)"/.exec(disposition);
+          if (matches && matches[1]) {
+            filename = matches[1];
+          }
+        }
+        return { ok: true, markdown, filename };
+      } catch {
+        return { ok: false, error: "Couldn't reach the server." };
+      }
+    },
+    []
+  );
+
   const deleteConversation = useCallback(
     async (id: string) => {
       setConversations((prev) => prev.filter((c) => c.id !== id));
@@ -164,6 +192,7 @@ export function useConversations() {
     resetAll,
     generateInsights,
     getHandoff,
+    exportConversationMarkdown,
     refresh: fetchConversations,
   };
 }

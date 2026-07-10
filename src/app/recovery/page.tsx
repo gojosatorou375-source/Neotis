@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Home, Plus, Trash2 } from "lucide-react";
 import { useConversations } from "@/lib/conversations/use-conversations";
@@ -110,6 +110,7 @@ export default function RecoveryPage() {
     duplicateSkill,
     deleteSkill,
     restoreSkillVersion,
+    updateSkillMarkdown,
   } = useSkills();
 
   // FEATURE 1 -- AI Knowledge Extractor: structured facts pulled out of
@@ -135,14 +136,22 @@ export default function RecoveryPage() {
     resetAll: resetCapturedData,
     generateInsights: generateCapturedInsights,
     getHandoff,
+    exportConversationMarkdown,
   } = useConversations();
   useEffect(() => {
     // Runs on every change to `captured` -- including it shrinking to zero --
     // so deletions (single or bulk) cascade into the recovery mirror and
     // every conversation-derived tab (Timeline, Graph) downgrades in step.
+    // Gated on `hydrated`: this hook's own effects run before the render-time
+    // `if (!hydrated) return null` below, so without this guard the very first
+    // poll of `captured` can race the recovery store's own Supabase fetch --
+    // `conversations` still reads as empty, every already-persisted captured
+    // conversation looks "new", and re-inserting them all hits a duplicate-key
+    // conflict on every single poll forever.
+    if (!hydrated) return;
     syncCapturedConversations(captured);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [captured]);
+  }, [captured, hydrated]);
 
   useEffect(() => {
     // Knowledge items cascade with their source conversation, same principle
@@ -158,17 +167,22 @@ export default function RecoveryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversations, knowledgeItems]);
 
-  // Auto-trigger knowledge extraction for newly imported or synced conversations
+  // Auto-trigger knowledge extraction for newly imported or synced conversations.
+  // Tracked by a ref (not derived from `knowledgeItems`) because a conversation
+  // that yields zero extractable items never appears in `knowledgeItems` -- deriving
+  // "already extracted" from that array would retry it, and thus call setItems,
+  // on every single render forever.
+  const attemptedExtractionRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!hydrated || !knowledgeHydrated) return;
-    const extractedIds = new Set(knowledgeItems.map((item) => item.conversationId));
     for (const c of conversations) {
-      if (!extractedIds.has(c.id)) {
+      if (!attemptedExtractionRef.current.has(c.id)) {
+        attemptedExtractionRef.current.add(c.id);
         extractFromConversation(c.id, c.title, c.conversationHistory);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversations, knowledgeItems, hydrated, knowledgeHydrated]);
+  }, [conversations, hydrated, knowledgeHydrated]);
 
   const [importOpen, setImportOpen] = useState(false);
   const [tab, setTab] = useState<RecoveryTab>("workspace");
@@ -253,31 +267,35 @@ export default function RecoveryPage() {
   };
 
   return (
-    <div className="relative z-10 flex min-h-screen flex-col">
-      <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] bg-[var(--bg)]/80 px-6 py-4 backdrop-blur-xl">
+    <div className="relative z-10 flex min-h-screen flex-col bg-[#FAFAFA] text-[#111111]">
+      <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 border-b-2 border-black bg-white px-6 py-4 shadow-sm">
         <div className="flex items-center gap-4">
           <Link
             href="/"
-            className="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-white/30 px-3 py-1.5 text-small font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] dark:bg-white/5"
+            className="flex items-center gap-1.5 rounded-full border-2 border-black bg-white px-4 py-2 text-xs font-black tracking-wide uppercase text-black hover:bg-[#B8FF33] hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-150 active:translate-y-0 active:shadow-none"
           >
             <Home className="h-3.5 w-3.5" />
             Home
           </Link>
-          <span className="text-[var(--border)]">/</span>
-          <span className="text-small font-semibold text-[var(--text-primary)]">Dashboard</span>
+          <span className="text-black/20 font-black">/</span>
+          <span className="text-xs font-black tracking-wide uppercase text-black">Dashboard</span>
         </div>
         <TabBar active={tab} onChange={setTab} />
         <div className="flex items-center gap-3">
           <Button
             size="sm"
             variant="ghost"
-            className="text-red-500 hover:bg-red-500/10"
+            className="border-2 border-black bg-red-50 hover:bg-red-100 text-red-700 rounded-full px-4 py-2 text-xs font-black tracking-wide uppercase hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-150 active:translate-y-0 active:shadow-none"
             onClick={handleResetAll}
           >
             <Trash2 className="h-3.5 w-3.5" />
             Reset all data
           </Button>
-          <Button size="sm" onClick={() => setImportOpen(true)}>
+          <Button 
+            size="sm" 
+            className="border-2 border-black bg-black hover:bg-black/90 text-white rounded-full px-4 py-2 text-xs font-black tracking-wide uppercase hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-150 active:translate-y-0 active:shadow-none"
+            onClick={() => setImportOpen(true)}
+          >
             <Plus className="h-4 w-4" />
             Import conversation
           </Button>
@@ -287,10 +305,10 @@ export default function RecoveryPage() {
 
       {tab === "workspace" && (
         <>
-          <div className="border-b border-[var(--border)] px-6 py-5">
+          <div className="border-b-2 border-black px-6 py-5 bg-[#FAFAFA]">
             <FindWhatIForgot conversations={conversations} onSelect={setSelectedId} />
           </div>
-          <div className="border-b border-[var(--border)] px-6 py-5">
+          <div className="border-b-2 border-black px-6 py-5 bg-[#FAFAFA]">
             <ProductivityDashboard stats={effectiveStats} />
           </div>
         </>
@@ -338,6 +356,7 @@ export default function RecoveryPage() {
             onContinue={handleContinue}
             onShare={getHandoff}
             onSelect={selectAndGoToWorkspace}
+            onExportMarkdown={exportConversationMarkdown}
           />
         )}
 
@@ -375,6 +394,7 @@ export default function RecoveryPage() {
             onDuplicateSkill={duplicateSkill}
             onDeleteSkill={deleteSkill}
             onRestoreSkillVersion={restoreSkillVersion}
+            onUpdateSkillMarkdown={updateSkillMarkdown}
           />
         )}
       </div>

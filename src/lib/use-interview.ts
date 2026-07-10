@@ -114,6 +114,16 @@ export function useInterview() {
     setPhase("landing");
   }, []);
 
+  /** Discards any in-progress/persisted answers and jumps straight into a
+   * fresh interview -- used when the user explicitly asks for a *new*
+   * profile (e.g. from the Skills Library) rather than the marketing
+   * landing screen they'd otherwise land on. */
+  const startNew = useCallback(() => {
+    setAnswers({});
+    setCurrentIndex(0);
+    setPhase("interview");
+  }, []);
+
   const progress = ((currentIndex + (phase === "completion" ? 1 : 0)) / TOTAL_QUESTIONS) * 100;
 
   return {
@@ -132,5 +142,6 @@ export function useInterview() {
     loadAnswers,
     applyPersona,
     goHome,
+    startNew,
   };
 }

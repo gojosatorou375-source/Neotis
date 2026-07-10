@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
@@ -13,6 +14,8 @@ import { usePersonas } from "@/lib/personas/use-personas";
 import { consumePendingLoad } from "@/lib/personas/storage";
 
 export default function Home() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     phase,
     currentIndex,
@@ -28,6 +31,7 @@ export default function Home() {
     loadAnswers,
     applyPersona,
     goHome,
+    startNew,
   } = useInterview();
 
   const { personas, savePersona } = usePersonas();
@@ -41,6 +45,18 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
 
+  // "+ New Personal Profile" links here with ?new=1 (e.g. from the Skills
+  // Library) so they land straight in a fresh interview instead of the
+  // marketing landing screen the bare "/" route would otherwise show.
+  useEffect(() => {
+    if (!hydrated) return;
+    if (searchParams.get("new") === "1") {
+      startNew();
+      router.replace("/");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, searchParams]);
+
   if (!hydrated) {
     return null;
   }
@@ -49,7 +65,7 @@ export default function Home() {
 
   return (
     <>
-      <Header onGoHome={phase !== "landing" ? goHome : undefined} />
+      {phase !== "landing" && <Header onGoHome={goHome} />}
       <main className="relative z-10">
         <AnimatePresence mode="wait">
           {phase === "landing" && (

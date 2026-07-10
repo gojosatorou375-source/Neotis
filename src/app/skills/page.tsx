@@ -23,6 +23,7 @@ export default function SkillsPage() {
     duplicateSkill,
     deleteSkill,
     restoreSkillVersion,
+    updateSkillMarkdown,
   } = useSkills();
   const [viewing, setViewing] = useState<Skill | null>(null);
   const [query, setQuery] = useState("");
@@ -103,7 +104,7 @@ export default function SkillsPage() {
             the Adaptive Project Interview into a Skill.md any AI assistant can read.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link href="/">
+            <Link href="/?new=1">
               <Button variant="glass">
                 <Plus className="h-4 w-4" />
                 New Personal Profile
@@ -131,7 +132,7 @@ export default function SkillsPage() {
               No Skills yet. Create a personal profile, a project profile, or combine them to get started.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
-              <Link href="/">
+              <Link href="/?new=1">
                 <Button variant="glass">New Personal Profile</Button>
               </Link>
               <Link href="/skills/new?mode=project">
@@ -252,6 +253,10 @@ export default function SkillsPage() {
             onRestoreVersion={(versionIndex) => {
               restoreSkillVersion(viewing.id, versionIndex);
               setViewing(null);
+            }}
+            onSaveMarkdown={(markdown) => {
+              updateSkillMarkdown(viewing.id, markdown);
+              setViewing((prev) => prev ? { ...prev, markdown } : null);
             }}
           />
         )}

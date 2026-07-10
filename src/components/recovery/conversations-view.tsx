@@ -27,6 +27,7 @@ interface ConversationsViewProps {
    * full transcript renders -- this ID is reused as-is by the recovery
    * store's synced copy of this same conversation, so it resolves directly. */
   onSelect: (id: string) => void;
+  onExportMarkdown?: (id: string) => Promise<{ ok: boolean; markdown?: string; filename?: string; error?: string }>;
 }
 
 /**
@@ -44,6 +45,7 @@ export function ConversationsView({
   onContinue,
   onShare,
   onSelect,
+  onExportMarkdown,
 }: ConversationsViewProps) {
   const [importing, setImporting] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
@@ -153,6 +155,7 @@ export function ConversationsView({
                     onGenerateInsights={onGenerateInsights}
                     onContinue={onContinue}
                     onShare={onShare}
+                    onExportMarkdown={onExportMarkdown}
                     selectable={selectMode}
                     selected={selectedIds.has(conversation.id)}
                     onToggleSelect={() => toggleSelected(conversation.id)}

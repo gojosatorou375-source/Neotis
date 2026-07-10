@@ -9,25 +9,38 @@
 (function () {
   const SELECTOR_STRATEGIES = [
     {
-      user: "[data-testid='thread-query'], .query-text",
-      assistant: "[data-testid='thread-answer'], .prose",
+      user: "[data-testid='thread-query'], .query-text, [class*='query']",
+      assistant: "[data-testid='thread-answer'], .prose, .markdown, .default, [class*='prose'], [class*='answer']",
     },
   ];
 
   function extractConversation() {
     let userEls = [];
     let assistantEls = [];
+    let bestUserEls = [];
+    let bestAssistantEls = [];
 
     for (const strategy of SELECTOR_STRATEGIES) {
-      userEls = Array.from(document.querySelectorAll(strategy.user));
-      assistantEls = Array.from(document.querySelectorAll(strategy.assistant));
-      if (userEls.length > 0 || assistantEls.length > 0) break;
+      const user = Array.from(document.querySelectorAll(strategy.user));
+      const assistant = Array.from(document.querySelectorAll(strategy.assistant));
+      if (user.length > 0 && assistant.length > 0) {
+        userEls = user;
+        assistantEls = assistant;
+        break;
+      }
+      if (user.length > bestUserEls.length) bestUserEls = user;
+      if (assistant.length > bestAssistantEls.length) bestAssistantEls = assistant;
     }
 
-    if (userEls.length === 0 && assistantEls.length === 0) {
+    if (userEls.length === 0 || assistantEls.length === 0) {
+      userEls = bestUserEls;
+      assistantEls = bestAssistantEls;
+    }
+
+    if (userEls.length === 0 || assistantEls.length === 0) {
       return window.NoetisCapture
         ? window.NoetisCapture.genericExtract("perplexity")
-        : { ok: false, error: "No message turns found on this page." };
+        : { ok: false, error: "No complete message turns found on this page." };
     }
 
     const tagged = [

@@ -11,27 +11,27 @@ const config: Config = {
     extend: {
       colors: {
         bg: {
-          light: "#F5F5F7",
-          dark: "#0A0A0A",
+          light: "var(--bg)",
+          dark: "var(--bg)",
         },
         card: {
-          light: "rgba(255,255,255,0.55)",
-          dark: "rgba(20,20,20,0.45)",
+          light: "var(--card)",
+          dark: "var(--card)",
         },
         border: {
-          light: "rgba(255,255,255,0.35)",
-          dark: "rgba(255,255,255,0.08)",
+          light: "var(--border)",
+          dark: "var(--border)",
         },
         text: {
-          primary: "#1D1D1F",
-          secondary: "#6E6E73",
-          "primary-dark": "#F5F5F7",
+          primary: "var(--text-primary)",
+          secondary: "var(--text-secondary)",
+          "primary-dark": "var(--text-primary)",
         },
         accent: {
-          DEFAULT: "#007AFF",
-          dark: "#0A84FF",
+          DEFAULT: "var(--accent)",
+          dark: "var(--accent)",
         },
-        success: "#34C759",
+        success: "var(--success)",
       },
       fontFamily: {
         sans: [

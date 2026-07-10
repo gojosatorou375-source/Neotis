@@ -52,9 +52,7 @@ export function InteractiveGraph({
   const HEIGHT = height;
   const svgRef = useRef<SVGSVGElement | null>(null);
 
-  // Live, mutable physics state — kept out of React state so the sim can run
-  // every animation frame without triggering full re-renders on its own; a
-  // `tick` counter below drives the (cheap) re-render instead.
+  // Live, mutable physics state
   const liveNodesRef = useRef<LiveNode[]>([]);
   const liveEdgesRef = useRef<SimEdge[]>([]);
   const pinnedRef = useRef<Set<string>>(new Set());
@@ -74,9 +72,6 @@ export function InteractiveGraph({
   const cx = WIDTH / 2;
   const cy = HEIGHT / 2;
 
-  // Rebuild the live node/edge list whenever the *shape* of the graph
-  // changes (nodes/edges added or removed), preserving positions + pin
-  // state for anything that already existed so the graph doesn't jump.
   const shapeKey = useMemo(
     () => nodes.map((n) => n.id).sort().join(",") + "|" + edges.map((e) => `${e.source}-${e.target}`).sort().join(","),
     [nodes, edges]
@@ -94,10 +89,6 @@ export function InteractiveGraph({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shapeKey, HEIGHT]);
 
-  // Continuous physics loop — always running while mounted. Heavily damped,
-  // so once the layout settles it barely perturbs; dragging a node (which
-  // pins it and moves its neighbors via spring/repulsion forces) wakes it
-  // back up naturally since the same loop is always ticking.
   useEffect(() => {
     let raf: number;
     let alive = true;
@@ -129,12 +120,11 @@ export function InteractiveGraph({
       if (e.target === focus) set.add(e.source);
     }
     return set;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hoveredId, activeId, edges]);
 
   const focusId = hoveredId ?? activeId;
 
-  // --- Screen <-> graph-space coordinate conversion ----------------------
+  // Coordinate conversion
   const clientToGraph = useCallback(
     (clientX: number, clientY: number) => {
       const svg = svgRef.current;
@@ -150,7 +140,6 @@ export function InteractiveGraph({
     [zoom, pan, cx, cy, HEIGHT]
   );
 
-  // --- Zoom controls ------------------------------------------------------
   const zoomIn = useCallback(() => setZoom((z) => clampZoom(z + ZOOM_STEP)), []);
   const zoomOut = useCallback(() => setZoom((z) => clampZoom(z - ZOOM_STEP)), []);
   const resetView = useCallback(() => {
@@ -163,7 +152,6 @@ export function InteractiveGraph({
     setZoom((z) => clampZoom(z - e.deltaY * 0.0015));
   }, []);
 
-  // --- Background pan ------------------------------------------------------
   const handleBackgroundPointerDown = useCallback(
     (e: PointerEvent<SVGSVGElement>) => {
       if (nodeDragRef.current) return;
@@ -209,7 +197,6 @@ export function InteractiveGraph({
     }
   }, [onNodeClick]);
 
-  // --- Node drag / click ---------------------------------------------------
   const handleNodePointerDown = useCallback((id: string) => (e: PointerEvent<SVGGElement>) => {
     e.stopPropagation();
     nodeDragRef.current = { id, moved: false, startClientX: e.clientX, startClientY: e.clientY };
@@ -226,21 +213,21 @@ export function InteractiveGraph({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl" style={{ height: HEIGHT }}>
-      <div className="absolute right-4 top-4 z-10 flex flex-col overflow-hidden rounded-xl border border-white/10 bg-black/40 backdrop-blur-md">
-        <button onClick={zoomIn} className="flex h-8 w-8 items-center justify-center text-white/80 transition hover:bg-white/10 hover:text-white" aria-label="Zoom in">
-          <Plus className="h-3.5 w-3.5" />
+    <div className="relative overflow-hidden rounded-2xl border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] bg-white" style={{ height: HEIGHT }}>
+      <div className="absolute right-4 top-4 z-10 flex flex-col overflow-hidden rounded-xl border-2 border-black bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+        <button onClick={zoomIn} className="flex h-8 w-8 items-center justify-center text-black transition hover:bg-[#B8FF33]" aria-label="Zoom in">
+          <Plus className="h-3.5 w-3.5" strokeWidth={3} />
         </button>
-        <div className="h-px w-full bg-white/10" />
-        <button onClick={zoomOut} className="flex h-8 w-8 items-center justify-center text-white/80 transition hover:bg-white/10 hover:text-white" aria-label="Zoom out">
-          <Minus className="h-3.5 w-3.5" />
+        <div className="h-[2px] w-full bg-black" />
+        <button onClick={zoomOut} className="flex h-8 w-8 items-center justify-center text-black transition hover:bg-[#B8FF33]" aria-label="Zoom out">
+          <Minus className="h-3.5 w-3.5" strokeWidth={3} />
         </button>
-        <div className="h-px w-full bg-white/10" />
-        <button onClick={resetView} className="flex h-8 w-8 items-center justify-center text-white/80 transition hover:bg-white/10 hover:text-white" aria-label="Reset view">
-          <Maximize2 className="h-3 w-3" />
+        <div className="h-[2px] w-full bg-black" />
+        <button onClick={resetView} className="flex h-8 w-8 items-center justify-center text-black transition hover:bg-[#B8FF33]" aria-label="Reset view">
+          <Maximize2 className="h-3.5 w-3.5" strokeWidth={3} />
         </button>
       </div>
-      <div className="absolute left-4 top-4 z-10 rounded-full border border-white/10 bg-black/40 px-2.5 py-1 text-[10.5px] font-medium tabular-nums text-white/60 backdrop-blur-md">
+      <div className="absolute left-4 top-4 z-10 rounded-full border-2 border-black bg-[#B8FF33] px-2.5 py-1 text-[10.5px] font-black tabular-nums text-black shadow-[2px_2px_0px_rgba(0,0,0,1)]">
         {Math.round(zoom * 100)}%
       </div>
 
@@ -249,7 +236,7 @@ export function InteractiveGraph({
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className="h-full w-full"
         style={{
-          background: "#191c2c",
+          background: "#FAFAFA",
           cursor: isPanning ? "grabbing" : "grab",
           touchAction: "none",
         }}
@@ -272,9 +259,9 @@ export function InteractiveGraph({
                 y1={a.y}
                 x2={b.x}
                 y2={b.y}
-                stroke="rgba(150,152,182,0.28)"
+                stroke="rgba(0,0,0,0.15)"
                 strokeOpacity={dim ? 0.12 : 1}
-                strokeWidth={1}
+                strokeWidth={1.5}
               />
             );
           })}
@@ -283,10 +270,10 @@ export function InteractiveGraph({
             const isFocus = node.id === focusId;
             const isConnected = connectedIds.has(node.id);
             const dim = focusId && !isFocus && !isConnected;
-            const labelSize = node.emphasis ? 13 : 10;
-            const labelWeight = node.emphasis ? 600 : 500;
-            const labelColor = node.emphasis ? "#e4e5f1" : "#9497b8";
-            const labelOffset = node.radius + (node.emphasis ? 20 : 13);
+            const labelSize = node.emphasis ? 13 : 11;
+            const labelWeight = 900;
+            const labelColor = "#000000";
+            const labelOffset = node.radius + (node.emphasis ? 20 : 15);
             return (
               <g
                 key={node.id}
@@ -300,14 +287,14 @@ export function InteractiveGraph({
                   <circle
                     cx={node.x}
                     cy={node.y}
-                    r={node.radius + 5}
+                    r={node.radius + 6}
                     fill="none"
-                    stroke={node.color}
-                    strokeWidth={1.5}
-                    opacity={0.6}
+                    stroke="#000000"
+                    strokeWidth={2}
+                    strokeDasharray="4 2"
                   />
                 )}
-                <circle cx={node.x} cy={node.y} r={node.radius} fill={node.color} />
+                <circle cx={node.x} cy={node.y} r={node.radius} fill={node.color} stroke="#000000" strokeWidth={2} />
                 <text
                   x={node.x}
                   y={node.y + labelOffset}
@@ -315,6 +302,9 @@ export function InteractiveGraph({
                   fontSize={labelSize}
                   fontWeight={labelWeight}
                   fill={labelColor}
+                  paintOrder="stroke"
+                  stroke="#FFFFFF"
+                  strokeWidth={2.5}
                 >
                   {node.label}
                 </text>
