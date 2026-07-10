@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { Header } from "@/components/header";
@@ -13,7 +13,7 @@ import { useInterview } from "@/lib/use-interview";
 import { usePersonas } from "@/lib/personas/use-personas";
 import { consumePendingLoad } from "@/lib/personas/storage";
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const {
@@ -104,5 +104,13 @@ export default function Home() {
       </main>
       {phase === "landing" && <Footer />}
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   );
 }

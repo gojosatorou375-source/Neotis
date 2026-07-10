@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -19,7 +19,7 @@ import { generateSkill } from "@/lib/skills/generate-skill";
 import { copyMarkdown, downloadMarkdown } from "@/lib/markdown-file";
 import { PROJECT_QUESTIONS } from "@/lib/skills/project-interview-questions";
 
-export default function NewSkillPage() {
+function NewSkillContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { personas, hydrated: personasHydrated } = usePersonas();
@@ -241,5 +241,13 @@ export default function NewSkillPage() {
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+export default function NewSkillPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewSkillContent />
+    </Suspense>
   );
 }
