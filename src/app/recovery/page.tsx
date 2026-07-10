@@ -314,8 +314,8 @@ export default function RecoveryPage() {
         </>
       )}
 
-      <div className="flex min-h-[70vh] flex-1 items-stretch">
-        <aside className="glass-panel w-[300px] shrink-0 overflow-hidden rounded-none border-y-0 border-l-0">
+      <div className="flex flex-col lg:flex-row min-h-[70vh] flex-1 items-stretch">
+        <aside className="glass-panel w-full lg:w-[300px] shrink-0 overflow-hidden rounded-none border-y-0 border-l-0 border-b-2 lg:border-b-0 lg:border-r-2 border-black">
           <WorkspaceTree
             conversations={conversations}
             selectedId={selectedId}
@@ -335,7 +335,7 @@ export default function RecoveryPage() {
               onSelect={setSelectedId}
               onSaveAsCapsule={(conversationId, name) => createCapsule(name, [conversationId], conversations)}
             />
-            <aside className="glass-panel w-[320px] shrink-0 overflow-hidden rounded-none border-y-0 border-r-0">
+            <aside className="glass-panel w-full lg:w-[320px] shrink-0 overflow-hidden rounded-none border-y-0 border-r-0 border-t-2 lg:border-t-0 lg:border-l-2 border-black">
               <RightSidebar
                 conversations={conversations}
                 projects={projects}
