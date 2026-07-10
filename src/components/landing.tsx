@@ -562,6 +562,71 @@ export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: L
         </div>
       </section>
 
+      {/* Extension Installation Guide */}
+      <section className="max-w-4xl mx-auto px-6 sm:px-10 py-16 border-t border-black/10">
+        <div className="text-center mb-12 space-y-4">
+          <span className="inline-block bg-[#B8FF33] text-black border-2 border-black px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-[3px_3px_0px_rgba(0,0,0,1)]">
+            Setup Guide
+          </span>
+          <h2 className="text-3xl font-extrabold tracking-tight text-[#111111]">
+            How to Install & Use the Extension
+          </h2>
+          <p className="text-sm text-black/70 max-w-lg mx-auto">
+            Get started by installing the Noetis browser extension to automatically capture all your conversations with user queries and assistant responses.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center border-2 border-black rounded-2xl p-8 bg-white shadow-[6px_6px_0px_rgba(0,0,0,1)]">
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <div className="w-8 h-8 shrink-0 rounded-full border-2 border-black bg-[#B8FF33] flex items-center justify-center font-black text-sm">1</div>
+              <div>
+                <h4 className="font-bold text-sm text-black mb-1">Download & Extract</h4>
+                <p className="text-xs text-black/60 leading-relaxed">
+                  Download the extension package below and unzip the archive on your local machine.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="w-8 h-8 shrink-0 rounded-full border-2 border-black bg-[#B8FF33] flex items-center justify-center font-black text-sm">2</div>
+              <div>
+                <h4 className="font-bold text-sm text-black mb-1">Load into Chrome</h4>
+                <p className="text-xs text-black/60 leading-relaxed">
+                  Navigate to <code className="bg-black/5 px-1 py-0.5 rounded font-mono text-[11px]">chrome://extensions/</code>, enable <strong>Developer mode</strong> (top right), and click <strong>Load unpacked</strong> (top left). Select the extracted folder.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="w-8 h-8 shrink-0 rounded-full border-2 border-black bg-[#B8FF33] flex items-center justify-center font-black text-sm">3</div>
+              <div>
+                <h4 className="font-bold text-sm text-black mb-1">Start Capturing</h4>
+                <p className="text-xs text-black/60 leading-relaxed">
+                  Open ChatGPT, Claude, or Perplexity. The floating Noetis widget will capture both your inputs and the LLM's responses, streaming them straight to your local dashboard.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-black/20 rounded-xl bg-[#FAFAFA] text-center">
+            <svg className="w-12 h-12 text-black/60 mb-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
+              <path d="M12 8V16M8 12L12 16L16 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <h5 className="font-extrabold text-sm text-black mb-2">Extension Package Ready</h5>
+            <p className="text-[11px] text-black/50 leading-relaxed mb-6 max-w-xs">
+              Includes real-time conversation parsers, MV3 service workers, and local host synchronization.
+            </p>
+            <a href="/extension.zip" download="noetis-extension.zip" className="w-full">
+              <Button className="w-full bg-[#B8FF33] hover:bg-[#B8FF33]/90 text-black border-2 border-black shadow-[3px_3px_0px_rgba(0,0,0,1)] py-3 font-black text-xs uppercase tracking-wider">
+                Download Extension .zip
+              </Button>
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* 9. FAQ Section */}
       <section className="max-w-4xl mx-auto px-6 sm:px-10 py-24 border-t border-black/10">
         <div className="text-center mb-16 space-y-4">
