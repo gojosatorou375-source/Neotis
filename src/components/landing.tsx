@@ -286,7 +286,7 @@ export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: L
               </div>
               <h3 className="text-xl font-bold tracking-tight">Teach every AI model your preferences once</h3>
               <p className="text-sm text-white/70 leading-relaxed">
-                Instead of repeating your coding style, tone, and constraints in every new chat, answer a short guided interview and Noetis compiles it into a single portable <code className="text-[#B8FF33]">AI_PROFILE.md</code> file. Drop it into Claude's custom instructions, Cursor's rules file, or any model's system prompt to get consistent, personalized output from the first message.
+                Instead of repeating your coding style, tone, and constraints in every new chat, answer a short guided interview and Noetis compiles it into a single portable <code className="text-[#B8FF33]">AI_PROFILE.md</code> file. Drop it into Claude&apos;s custom instructions, Cursor&apos;s rules file, or any model&apos;s system prompt to get consistent, personalized output from the first message.
               </p>
             </div>
             <div className="pt-6 flex justify-between items-center">
@@ -358,7 +358,7 @@ export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: L
       <section className="max-w-7xl mx-auto px-6 sm:px-10 py-12">
         <div className="bg-[#F0F0F0] border-2 border-black rounded-[24px] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden shadow-[6px_6px_0px_rgba(0,0,0,1)]">
           <div className="space-y-4 max-w-xl z-10">
-            <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Let's make things happen</h3>
+            <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Let&apos;s make things happen</h3>
             <p className="text-sm text-black/70 leading-relaxed">
               Start centralizing your conversations today to build a persistent local knowledge base for your coding projects and terminal agents.
             </p>
@@ -461,10 +461,10 @@ export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: L
             <div className="space-y-3">
               <span className="text-[10px] font-black uppercase tracking-widest text-[#B8FF33] block">The Freelancer Juggling Multiple Clients</span>
               <p className="text-xs font-bold text-white/50 leading-relaxed">
-                <strong className="text-white block mb-1">Problem:</strong> You agreed on a styling convention or API structure in an AI chat last week, and now you can't remember which conversation it was in.
+                <strong className="text-white block mb-1">Problem:</strong> You agreed on a styling convention or API structure in an AI chat last week, and now you can&apos;t remember which conversation it was in.
               </p>
               <p className="text-xs font-bold text-white/80 leading-relaxed">
-                <strong className="text-[#B8FF33] block mb-1">How Noetis helps:</strong> Use natural-language search to describe what you remember — for example, "tailwind button styles" — and Noetis surfaces the matching conversation and code block instantly.
+                <strong className="text-[#B8FF33] block mb-1">How Noetis helps:</strong> Use natural-language search to describe what you remember — for example, &quot;tailwind button styles&quot; — and Noetis surfaces the matching conversation and code block instantly.
               </p>
             </div>
             <div className="pt-4">
@@ -480,10 +480,10 @@ export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: L
             <div className="space-y-3">
               <span className="text-[10px] font-black uppercase tracking-widest text-[#B8FF33] block">The AI-Assisted Engineering Team</span>
               <p className="text-xs font-bold text-white/50 leading-relaxed">
-                <strong className="text-white block mb-1">Problem:</strong> A teammate's AI-assisted decisions from a browser chat never make it into the codebase's shared context.
+                <strong className="text-white block mb-1">Problem:</strong> A teammate&apos;s AI-assisted decisions from a browser chat never make it into the codebase&apos;s shared context.
               </p>
               <p className="text-xs font-bold text-white/80 leading-relaxed">
-                <strong className="text-[#B8FF33] block mb-1">How Noetis helps:</strong> Through the MCP server, any team member's AI-enabled editor can query the shared conversation history, keeping architectural decisions and conventions consistent across the team.
+                <strong className="text-[#B8FF33] block mb-1">How Noetis helps:</strong> Through the MCP server, any team member&apos;s AI-enabled editor can query the shared conversation history, keeping architectural decisions and conventions consistent across the team.
               </p>
             </div>
             <div className="pt-4">
@@ -603,7 +603,7 @@ export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: L
               <div>
                 <h4 className="font-bold text-sm text-black mb-1">Start Capturing</h4>
                 <p className="text-xs text-black/60 leading-relaxed">
-                  Open ChatGPT, Claude, or Perplexity. The floating Noetis widget will capture both your inputs and the LLM's responses, streaming them straight to your local dashboard.
+                  Open ChatGPT, Claude, or Perplexity. The floating Noetis widget will capture both your inputs and the LLM&apos;s responses, streaming them straight to your local dashboard.
                 </p>
               </div>
             </div>
@@ -642,14 +642,14 @@ export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: L
           <div className="border-2 border-black rounded-2xl p-6 bg-white shadow-[3px_3px_0px_rgba(0,0,0,1)]">
             <h4 className="text-sm font-black uppercase tracking-wide text-black mb-2">Does Noetis need API keys to capture conversations?</h4>
             <p className="text-xs font-semibold leading-relaxed text-black/60">
-              No. Noetis captures conversations directly from the browser interface using a lightweight observer, so there's no API key setup and no risk of hitting provider rate limits.
+              No. Noetis captures conversations directly from the browser interface using a lightweight observer, so there&apos;s no API key setup and no risk of hitting provider rate limits.
             </p>
           </div>
 
           <div className="border-2 border-black rounded-2xl p-6 bg-white shadow-[3px_3px_0px_rgba(0,0,0,1)]">
-            <h4 className="text-sm font-black uppercase tracking-wide text-black mb-2">Is my conversation data sent to Noetis's servers?</h4>
+            <h4 className="text-sm font-black uppercase tracking-wide text-black mb-2">Is my conversation data sent to Noetis&apos;s servers?</h4>
             <p className="text-xs font-semibold leading-relaxed text-black/60">
-              No. Noetis is local-first by design. Conversations, summaries, and generated profiles are stored in a local database on your machine or your own Supabase instance — never on a third-party cloud service you don't control.
+              No. Noetis is local-first by design. Conversations, summaries, and generated profiles are stored in a local database on your machine or your own Supabase instance — never on a third-party cloud service you don&apos;t control.
             </p>
           </div>
 
