@@ -1,6 +1,7 @@
 import type { Conversation, ProjectSummary } from "@/types/recovery";
 import { SIMILARITY_THRESHOLD } from "@/types/recovery";
 import { cosineSimilarity, embedText } from "@/lib/recovery/embeddings";
+import { tokenize } from "@/lib/recovery/text-utils";
 
 export interface RankedConversation {
   conversation: Conversation;
@@ -46,21 +47,82 @@ export function semanticSearch(
   conversations: Conversation[],
   limit = 8
 ): RankedConversation[] {
-  if (query.trim().length === 0) return [];
-  const queryVector = embedText(query);
+  const trimmed = query.trim();
+  if (trimmed.length === 0) return [];
+  const queryVector = embedText(trimmed);
   const now = Date.now();
+  const queryTokens = tokenize(trimmed);
 
   return conversations
     .map((conversation) => {
+      // 1. Base vector similarity
       const similarity = cosineSimilarity(queryVector, conversation.embedding);
+
+      // 2. Recency boost (up to 0.15)
       const recencyDays = (now - new Date(conversation.lastUpdated).getTime()) / DAY_MS;
       const recencyBoost = Math.max(0, 1 - recencyDays / 180) * 0.15;
-      const keywordBoost = conversation.keywords.some((k) =>
-        query.toLowerCase().includes(k)
-      )
-        ? 0.1
-        : 0;
-      const score = similarity + recencyBoost + keywordBoost;
+
+      // 3. Keyword / Token matching boosts
+      let matchBoost = 0;
+      if (queryTokens.length > 0) {
+        const titleLower = conversation.title.toLowerCase();
+        const summaryLower = conversation.summary.toLowerCase();
+        
+        let titleMatches = 0;
+        let keywordMatches = 0;
+        let summaryMatches = 0;
+        let historyMatches = 0;
+
+        for (const token of queryTokens) {
+          const tokenLower = token.toLowerCase();
+
+          // Title match
+          if (titleLower.includes(tokenLower)) {
+            titleMatches++;
+          }
+          // Keywords/topics match
+          if (
+            conversation.keywords.some((k) => k.toLowerCase().includes(tokenLower)) ||
+            conversation.topics.some((t) => t.toLowerCase().includes(tokenLower))
+          ) {
+            keywordMatches++;
+          }
+          // Summary match
+          if (summaryLower.includes(tokenLower)) {
+            summaryMatches++;
+          }
+          // History match (discussing it)
+          const inHistory = conversation.conversationHistory.some((msg) =>
+            msg.content.toLowerCase().includes(tokenLower)
+          );
+          if (inHistory) {
+            historyMatches++;
+          }
+        }
+
+        matchBoost += (titleMatches / queryTokens.length) * 0.35;
+        matchBoost += (keywordMatches / queryTokens.length) * 0.25;
+        matchBoost += (summaryMatches / queryTokens.length) * 0.15;
+        matchBoost += Math.min(0.2, (historyMatches / queryTokens.length) * 0.1);
+      }
+
+      // 4. Exact Phrase Boost
+      let phraseBoost = 0;
+      const queryLower = trimmed.toLowerCase();
+      if (conversation.title.toLowerCase().includes(queryLower)) {
+        phraseBoost += 0.2;
+      }
+      if (conversation.summary.toLowerCase().includes(queryLower)) {
+        phraseBoost += 0.1;
+      }
+      const inHistoryPhrase = conversation.conversationHistory.some((msg) =>
+        msg.content.toLowerCase().includes(queryLower)
+      );
+      if (inHistoryPhrase) {
+        phraseBoost += 0.15;
+      }
+
+      const score = similarity + recencyBoost + matchBoost + phraseBoost;
       return { conversation, score };
     })
     .filter((r) => r.score > 0.05)

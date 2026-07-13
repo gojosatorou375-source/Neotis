@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { Header } from "@/components/header";
@@ -11,10 +11,15 @@ import { CompletionScreen } from "@/components/completion-screen";
 import { useInterview } from "@/lib/use-interview";
 import { usePersonas } from "@/lib/personas/use-personas";
 import { consumePendingLoad } from "@/lib/personas/storage";
+import { getSupabase } from "@/lib/supabase/client";
+import { LoginPage } from "@/components/login-page";
 
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
   const {
     phase,
     currentIndex,
@@ -34,6 +39,31 @@ function HomeContent() {
   } = useInterview();
 
   const { personas, savePersona } = usePersonas();
+
+  // Handle Authentication State
+  useEffect(() => {
+    try {
+      const supabase = getSupabase();
+      
+      // Check current session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setUser(session?.user ?? null);
+        setAuthLoading(false);
+      });
+
+      // Listen for auth events
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null);
+        setAuthLoading(false);
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    } catch {
+      setAuthLoading(false);
+    }
+  }, []);
 
   // If the user clicked "Edit answers" from the Persona Library, pick up the
   // handed-off answers and drop straight into the interview.
@@ -56,8 +86,17 @@ function HomeContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, searchParams]);
 
-  if (!hydrated) {
-    return null;
+  if (authLoading || !hydrated) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-[#FAFAFA] dark:bg-[#0A0A0A]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-black dark:border-white border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Redirect unauthenticated users to the LoginPage
+  if (!user) {
+    return <LoginPage />;
   }
 
   const hasSavedProgress = Object.keys(answers).length > 0 && phase !== "landing";

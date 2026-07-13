@@ -2,15 +2,26 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Conversation, ConversationCapsule } from "@/types/conversation";
+import { getSupabase } from "@/lib/supabase/client";
 
 const POLL_INTERVAL_MS = 4000;
 
 // Sent alongside every request to /api/conversations so the shared secret
 // check in src/lib/server/access-key.ts lets same-origin app traffic
 // through (see NEXT_PUBLIC_APP_ACCESS_KEY in .env.local.example).
-function accessHeaders(extra?: Record<string, string>): Record<string, string> {
+async function accessHeaders(extra?: Record<string, string>): Promise<Record<string, string>> {
   const key = process.env.NEXT_PUBLIC_APP_ACCESS_KEY;
-  return { ...(key ? { "X-PersonaMD-Access": key } : {}), ...extra };
+  const headers: Record<string, string> = { ...(key ? { "X-PersonaMD-Access": key } : {}), ...extra };
+  try {
+    const supabase = getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    }
+  } catch {
+    // Ignore error if Supabase auth is not ready or during builds
+  }
+  return headers;
 }
 
 /** Server-backed conversation library: reads from and writes through
@@ -24,7 +35,10 @@ export function useConversations() {
 
   const fetchConversations = useCallback(async () => {
     try {
-      const res = await fetch("/api/conversations", { cache: "no-store", headers: accessHeaders() });
+      const res = await fetch("/api/conversations", { 
+        cache: "no-store", 
+        headers: await accessHeaders() 
+      });
       if (!res.ok) return;
       const data = await res.json();
       setConversations(data.conversations ?? []);
@@ -51,7 +65,7 @@ export function useConversations() {
         try {
           const res = await fetch("/api/conversations", {
             method: "POST",
-            headers: accessHeaders({ "Content-Type": "application/json" }),
+            headers: await accessHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify(conversation),
           });
           const data = await res.json();
@@ -74,7 +88,7 @@ export function useConversations() {
       try {
         const res = await fetch(`/api/conversations/${id}/insights`, {
           method: "POST",
-          headers: accessHeaders(),
+          headers: await accessHeaders(),
         });
         const data = await res.json();
         if (!res.ok) return { ok: false, error: data.error || "Extraction failed." };
@@ -97,7 +111,7 @@ export function useConversations() {
       try {
         const res = await fetch("/api/conversations/handoff", {
           method: "POST",
-          headers: accessHeaders({ "Content-Type": "application/json" }),
+          headers: await accessHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ conversationId: id }),
         });
         const data = await res.json();
@@ -115,7 +129,7 @@ export function useConversations() {
       try {
         const res = await fetch(`/api/conversations/${id}/export`, {
           method: "GET",
-          headers: accessHeaders(),
+          headers: await accessHeaders(),
         });
         if (!res.ok) {
           const data = await res.json();
@@ -142,7 +156,7 @@ export function useConversations() {
     async (id: string) => {
       setConversations((prev) => prev.filter((c) => c.id !== id));
       try {
-        await fetch(`/api/conversations/${id}`, { method: "DELETE", headers: accessHeaders() });
+        await fetch(`/api/conversations/${id}`, { method: "DELETE", headers: await accessHeaders() });
       } finally {
         fetchConversations();
       }
@@ -161,7 +175,7 @@ export function useConversations() {
       setConversations((prev) => prev.filter((c) => !idSet.has(c.id)));
       try {
         await Promise.all(
-          ids.map((id) => fetch(`/api/conversations/${id}`, { method: "DELETE", headers: accessHeaders() }))
+          ids.map(async (id) => fetch(`/api/conversations/${id}`, { method: "DELETE", headers: await accessHeaders() }))
         );
       } finally {
         fetchConversations();
@@ -177,7 +191,7 @@ export function useConversations() {
   const resetAll = useCallback(async () => {
     setConversations([]);
     try {
-      await fetch("/api/conversations", { method: "DELETE", headers: accessHeaders() });
+      await fetch("/api/conversations", { method: "DELETE", headers: await accessHeaders() });
     } finally {
       fetchConversations();
     }
