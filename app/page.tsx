@@ -86,17 +86,12 @@ function HomeContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, searchParams]);
 
-  if (authLoading || !hydrated) {
+  if (!hydrated) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-[#FAFAFA] dark:bg-[#0A0A0A]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-black dark:border-white border-t-transparent" />
       </div>
     );
-  }
-
-  // Redirect unauthenticated users to the LoginPage
-  if (!user) {
-    return <LoginPage />;
   }
 
   const hasSavedProgress = Object.keys(answers).length > 0 && phase !== "landing";
