@@ -895,7 +895,7 @@
         emptyBtn.textContent = "Start Interview on PersonaMD";
         emptyBtn.addEventListener("click", () => {
           safeSendMessage({ type: "GET_SETTINGS" }, (resp) => {
-            const baseUrl = (resp && resp.settings && resp.settings.baseUrl) || "http://localhost:3000";
+            const baseUrl = (resp && resp.settings && resp.settings.baseUrl) || "https://noetis.vercel.app";
             let path = "/";
             if (docType === "project") path = "/skills/new?mode=project";
             else if (docType === "skills") path = "/recovery?tab=skills";

@@ -1,0 +1,417 @@
+:root {
+  --accent: #B8FF33;
+  --accent-hover: #A2DF29;
+  --danger: #FF3366;
+  --danger-soft: rgba(255, 51, 102, 0.08);
+  --bg: #FAFAFA;
+  --panel: #FFFFFF;
+  --border: #000000;
+  --text-primary: #111111;
+  --text-secondary: #555555;
+}
+* {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+body {
+  width: 360px;
+  margin: 0;
+  padding: 0 0 16px;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--text-primary);
+  background: var(--bg);
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 2px solid var(--border);
+  background: #ffffff;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.brand h1 {
+  font-size: 15px;
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.connection-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 2px solid var(--border);
+  background: #FFFFFF;
+  box-shadow: 1.5px 1.5px 0px var(--border);
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+.connection-badge.connected {
+  background: var(--accent);
+}
+.connection-badge.offline {
+  background: var(--danger);
+  color: #ffffff;
+}
+.connection-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #000000;
+  border: 1px solid #ffffff;
+}
+.connection-badge.offline .dot {
+  background: #ffffff;
+}
+
+p.hint {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin: 12px 16px;
+  line-height: 1.4;
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  margin: 16px 16px 8px;
+}
+
+.group-card {
+  margin: 0 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 3px 3px 0px var(--border);
+  overflow: hidden;
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 2px solid var(--border);
+}
+.row:last-child {
+  border-bottom: none;
+}
+.row-label {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+/* Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.switch .track {
+  position: absolute;
+  inset: 0;
+  background: #FFFFFF;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+.switch .track::before {
+  content: "";
+  position: absolute;
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  top: 2px;
+  border-radius: 50%;
+  background: #000000;
+  transition: transform 0.15s ease;
+}
+.switch input:checked + .track {
+  background: var(--accent);
+}
+.switch input:checked + .track::before {
+  transform: translateX(16px);
+}
+
+.field-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.field-label {
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.badge-dev {
+  font-size: 9px;
+  font-weight: 900;
+  color: #000000;
+  background: var(--accent);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.input-control {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  background: #FFFFFF;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--text-primary);
+  padding: 8px 10px;
+  outline: none;
+}
+.input-control:focus {
+  background: #FFFFFF;
+}
+.input-group {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+.input-group input {
+  flex: 1;
+}
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  background: #FFFFFF;
+  color: #000000;
+  cursor: pointer;
+  box-shadow: 1.5px 1.5px 0px var(--border);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.icon-btn:active {
+  transform: translate(1.5px, 1.5px);
+  box-shadow: none;
+}
+.icon-btn.danger {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+/* Collapsible Advanced Settings Details Card */
+details.advanced-settings {
+  border-top: 2px solid var(--border);
+  background: #FAFAFA;
+}
+summary.advanced-summary {
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  background: #ffffff;
+  border-bottom: 2px solid var(--border);
+}
+details.advanced-settings[open] summary.advanced-summary {
+  border-bottom: 2px solid var(--border);
+}
+.advanced-content {
+  background: #F4F4F4;
+}
+
+/* Actions */
+.actions {
+  margin: 16px 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+button.action-btn {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.primary-btn {
+  background: var(--accent);
+  color: #000000;
+  box-shadow: 3px 3px 0px var(--border);
+}
+.primary-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+.secondary-btn {
+  background: #FFFFFF;
+  color: #000000;
+  box-shadow: 3px 3px 0px var(--border);
+}
+.secondary-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+
+/* Status */
+.status {
+  font-size: 11.5px;
+  font-weight: 850;
+  color: var(--text-secondary);
+  margin: 10px 16px 0;
+  min-height: 15px;
+  line-height: 1.4;
+}
+.progress-track {
+  height: 8px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  background: #FFFFFF;
+  overflow: hidden;
+  margin: 10px 16px 0;
+  display: none;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width 0.2s ease;
+}
+
+/* Captured List */
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+ul::-webkit-scrollbar {
+  width: 5px;
+}
+ul::-webkit-scrollbar-thumb {
+  background: #000000;
+}
+li.capture-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--border);
+  font-size: 12px;
+  font-weight: 700;
+}
+li.capture-row:last-child {
+  border-bottom: none;
+}
+li.capture-row .meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  min-width: 0;
+  flex: 1;
+}
+li.capture-row .provider-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  font-size: 8px;
+  font-weight: 900;
+  color: #000000;
+  flex-shrink: 0;
+}
+li.capture-row .meta span.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+li.capture-row .delete-btn {
+  opacity: 0.6;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: #000000;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+li.capture-row:hover .delete-btn {
+  opacity: 1;
+  color: var(--danger);
+}
+.empty {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 24px 12px;
+}
+
+/* Footer Buttons */
+.footer-actions {
+  display: flex;
+  gap: 8px;
+  margin: 12px 12px 0;
+}
+.footer-actions button.plain-btn,
+#resetPosition {
+  flex: 1;
+  background: #FFFFFF;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #000000;
+  cursor: pointer;
+  box-shadow: 1.5px 1.5px 0px var(--border);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.footer-actions button.plain-btn:active,
+#resetPosition:active {
+  transform: translate(1.5px, 1.5px);
+  box-shadow: none;
+}
+.footer-actions button.plain-btn.danger-btn {
+  background: var(--danger-soft);
+}

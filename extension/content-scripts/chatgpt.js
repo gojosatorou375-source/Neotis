@@ -35,16 +35,77 @@
     return { ok: true, conversations };
   }
 
+  const SELECTOR_STRATEGIES = [
+    {
+      user: '[data-message-author-role="user"]',
+      assistant: '[data-message-author-role="assistant"], [data-message-author-role="model"]',
+    },
+    {
+      user: 'article [data-message-author-role="user"]',
+      assistant: 'article [data-message-author-role="assistant"], article [data-message-author-role="model"]',
+    },
+    {
+      user: '[class*="ChatMessageContent-user"]',
+      assistant: '[class*="ChatMessageContent-assistant"], article .markdown',
+    }
+  ];
+
   function extractConversation() {
-    const turns = Array.from(document.querySelectorAll(SELECTORS.turn));
-    if (turns.length === 0) {
+    let userEls = [];
+    let assistantEls = [];
+    let bestUserEls = [];
+    let bestAssistantEls = [];
+
+    for (const strategy of SELECTOR_STRATEGIES) {
+      const user = Array.from(document.querySelectorAll(strategy.user));
+      const assistant = Array.from(document.querySelectorAll(strategy.assistant));
+      if (user.length > 0 && assistant.length > 0) {
+        userEls = user;
+        assistantEls = assistant;
+        break;
+      }
+      if (user.length > bestUserEls.length) bestUserEls = user;
+      if (assistant.length > bestAssistantEls.length) bestAssistantEls = assistant;
+    }
+
+    if (userEls.length === 0 || assistantEls.length === 0) {
+      userEls = bestUserEls;
+      assistantEls = bestAssistantEls;
+    }
+
+    if (userEls.length === 0 && assistantEls.length === 0) {
+      const turns = Array.from(document.querySelectorAll(SELECTORS.turn));
+      if (turns.length > 0) {
+        userEls = turns.filter(el => (el.getAttribute(SELECTORS.roleAttr) || "").toLowerCase().includes("user"));
+        assistantEls = turns.filter(el => {
+          const role = (el.getAttribute(SELECTORS.roleAttr) || "").toLowerCase();
+          return role.includes("assistant") || role.includes("model");
+        });
+      }
+    }
+
+    if (userEls.length === 0 && assistantEls.length === 0) {
+      if (window.NoetisCapture) {
+        const fallback = window.NoetisCapture.genericExtract("chatgpt");
+        if (fallback.ok) return fallback;
+      }
       return { ok: false, error: "No message turns found on this page. Open a conversation first." };
     }
 
-    const messages = turns.map((el) => ({
-      role: el.getAttribute(SELECTORS.roleAttr) || "unknown",
+    const tagged = [
+      ...userEls.map((el) => ({ el, role: "user" })),
+      ...assistantEls.map((el) => ({ el, role: "assistant" })),
+    ].sort((a, b) => {
+      const pos = a.el.compareDocumentPosition(b.el);
+      if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+      if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+      return 0;
+    });
+
+    const messages = tagged.map(({ el, role }) => ({
+      role,
       content: el.innerText.trim(),
-    }));
+    })).filter(m => m.content.length > 0);
 
     const titleEl = document.querySelector(SELECTORS.title);
     const title =

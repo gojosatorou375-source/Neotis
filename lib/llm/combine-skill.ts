@@ -1,7 +1,7 @@
 import type { DocumentGenerationResult } from "@/types";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = "anthropic/claude-haiku-4.5";
+const MODEL = "meta-llama/llama-3.3-70b-instruct:free";
 
 /**
  * Deterministic fallback in case the OpenRouter call fails or API key is missing.

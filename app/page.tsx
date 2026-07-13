@@ -4,8 +4,7 @@ import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { Header } from "@/components/header";
-import { Footer } from "@/components/footer";
-import { Landing } from "@/components/landing";
+import { RecoveryDashboard } from "@/components/recovery/recovery-dashboard";
 import { Interview } from "@/components/interview";
 import { LoadingScreen } from "@/components/loading-screen";
 import { CompletionScreen } from "@/components/completion-screen";
@@ -69,12 +68,9 @@ function HomeContent() {
       <main className="relative z-10">
         <AnimatePresence mode="wait">
           {phase === "landing" && (
-            <Landing
+            <RecoveryDashboard
               key="landing"
-              onStart={start}
-              hasSavedProgress={hasSavedProgress}
-              personas={personas}
-              onUsePersona={(persona) => applyPersona(persona.answers)}
+              onStartPersonal={start}
             />
           )}
           {phase === "interview" && (
@@ -102,7 +98,6 @@ function HomeContent() {
           )}
         </AnimatePresence>
       </main>
-      {phase === "landing" && <Footer />}
     </>
   );
 }

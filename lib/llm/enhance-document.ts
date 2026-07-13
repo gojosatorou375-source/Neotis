@@ -3,7 +3,7 @@ import { generateSkill } from "@/lib/skills/generate-skill";
 import type { DocumentGenerationResult } from "@/types";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = "anthropic/claude-haiku-4.5";
+const MODEL = "meta-llama/llama-3.3-70b-instruct:free";
 
 export interface EnhanceDocumentOptions {
   answers: Record<string | number, string>;

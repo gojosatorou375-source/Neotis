@@ -5,7 +5,7 @@ import { PROJECT_QUESTIONS } from "@/lib/skills/project-interview-questions";
 // Server-only, same rules as openrouter.ts / handoff.ts: never import this
 // from a client component, it reads process.env.OPENROUTER_API_KEY.
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = "anthropic/claude-haiku-4.5";
+const MODEL = "meta-llama/llama-3.3-70b-instruct:free";
 const MAX_TRANSCRIPT_CHARS = 16000;
 
 export interface SkillDraft {

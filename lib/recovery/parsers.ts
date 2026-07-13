@@ -86,12 +86,14 @@ function parseMarkdown(text: string, platform: Platform, titleHint?: string): Ra
   };
 
   for (const line of lines) {
-    const userMatch = /^\*\*user\*\*:?/i.test(line.trim());
-    const assistantMatch = /^\*\*assistant\*\*:?/i.test(line.trim());
+    const userMatch = /^(?:\*\*|###\s+)(user|you|me|human)(?:\*\*)?:?/i.test(line.trim()) || /^(user|you|me|human):/i.test(line.trim());
+    const assistantMatch = /^(?:\*\*|###\s+)(assistant|chatgpt|claude|gemini|model|ai|grok|deepseek)(?:\*\*)?:?/i.test(line.trim()) || /^(assistant|chatgpt|claude|gemini|model|ai|grok|deepseek):/i.test(line.trim());
     if (userMatch || assistantMatch) {
       flush();
       currentRole = userMatch ? "user" : "assistant";
-      const rest = line.replace(/^\*\*(user|assistant)\*\*:?/i, "").trim();
+      const rest = line
+        .replace(/^(?:\*\*|###\s+|#\s+)?(user|you|me|human|assistant|chatgpt|claude|gemini|model|ai|grok|deepseek)(?:\*\*)?:?/i, "")
+        .trim();
       if (rest) buffer.push(rest);
     } else if (!/^#\s+/.test(line)) {
       buffer.push(line);

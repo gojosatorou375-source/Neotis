@@ -127,14 +127,7 @@ export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: L
           <a href="#capabilities" className="hover:text-black/60 transition-colors">Capabilities</a>
           <a href="#how-it-works" className="hover:text-black/60 transition-colors">Process</a>
           <a href="#use-cases" className="hover:text-black/60 transition-colors">Use Cases</a>
-        </div>
-        <div>
-          <button 
-            onClick={onStart}
-            className="bg-black text-white hover:bg-black/80 px-5 py-2.5 rounded-full text-xs font-bold tracking-wide transition-all shadow-sm"
-          >
-            {hasSavedProgress ? "Resume Setup" : "Get Started Free"}
-          </button>
+          <Link href="/" className="hover:text-black/60 transition-colors">Open Dashboard</Link>
         </div>
       </nav>
 
@@ -167,16 +160,9 @@ export function Landing({ onStart, hasSavedProgress, personas, onUsePersona }: L
             variants={itemVariants}
             className="flex flex-col sm:flex-row items-center gap-4"
           >
-            <button 
-              onClick={onStart}
-              className="w-full sm:w-auto bg-black text-white hover:bg-black/90 px-8 py-4 rounded-full font-bold text-sm tracking-wide transition-all shadow-md flex items-center justify-center gap-2"
-            >
-              Get Started Free
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <Link href="/recovery" className="w-full sm:w-auto">
+            <Link href="/" className="w-full sm:w-auto">
               <button 
-                className="w-full sm:w-auto border-2 border-black bg-transparent hover:bg-black/5 px-8 py-4 rounded-full font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2"
+                className="w-full sm:w-auto border-2 border-black bg-black text-white hover:bg-black/90 px-8 py-4 rounded-full font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2 shadow-md hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-0"
               >
                 Open Dashboard
               </button>
